@@ -1,90 +1,84 @@
 # Android Kernel Build Skill
 
 ## 用途
-构建适用于小米设备的 Android 内核（sm8250 平台），生成可刷入的 AnyKernel3 zip 包。
+通过 GitHub Actions 构建适用于小米设备的 Android 内核（sm8250 平台），生成可刷入的 AnyKernel3 zip 包。
 
 ## 触发条件
 - 构建 android kernel
 - 编译内核
 - 构建 AnyKernel3
 
+## 构建失败时
+如果构建失败，查看 GitHub Actions 运行记录：
+https://github.com/dgmico/android_kernel_xiaomi_sm8250/actions
+
 ---
 
-## 问题记录
-遇到的问题记录在 `.claude/troubleshooting/` 目录下，按编号命名：
-- `001-yaml-syntax-error.md` - YAML 语法错误
-- `002-compiler-not-found.md` - 编译器未找到
-- `003-defconfig-path-error.md` - defconfig 路径错误
-- `004-lockdep-error.md` - lockdep.c 编译错误
-- `005-traceh-not-found.md` - trace.h 文件未找到
-- `006-werror-warning.md` - 警告被视为错误
-- `007-git-clone-slow.md` - git clone 太慢
+## 已知问题汇总
+
+### 1. YAML 语法错误
+- **原因**: heredoc 中嵌套的 Python 代码导致 YAML 解析失败
+- **解决**: 使用 `printf` 分行写入脚本
+
+### 2. 编译器未找到
+- **原因**: Clang 17 自带交叉编译器路径不同，Kconfig 需要 GCC 风格工具链
+- **解决**: 安装 gcc-aarch64-linux-gnu，使用 aarch64-linux-gnu- 作为 CROSS_COMPILE
+
+### 3. defconfig 路径错误
+- **原因**: kona_defconfig 位于 vendor 子目录
+- **解决**: 使用完整路径 vendor/kona_defconfig
+
+### 4. lockdep.c 编译错误
+- **原因**: nested 参数已从 lock_release() 移除但调用处未更新
+- **解决**: 修改 kernel/locking/lockdep.c 第 4008 行，将 nested 改为 0
+
+### 5. trace.h 文件未找到
+- **原因**: Clang 与 trace 头文件不兼容
+- **解决**: 统一使用 GCC 替代 Clang
+
+### 6. 警告被视为错误
+- **原因**: CONFIG_CC_WERROR 启用
+- **解决**: 添加 KCFLAGS="-Wno-error"
+
+### 7. git clone 太慢
+- **原因**: fetch-depth: 0 下载完整 git 历史
+- **解决**: 使用 fetch-depth: 1 浅克隆
+
+### 8. 部分步骤仍使用 Clang
+- **原因**: olddefconfig 步骤仍使用 clang 作为 CC
+- **解决**: 统一使用 GCC，移除 Clang 下载步骤
 
 ---
 
 ## 构建流程
 
-### 1. 环境配置
+### 1. 克隆源码
 ```bash
-# 安装依赖 (Ubuntu/Debian)
-sudo apt-get update
-sudo apt-get install -y \
-  build-essential bc bison flex \
-  libssl-dev libelf-dev python3 \
-  crossbuild-essential-arm64 zip \
-  gcc-aarch64-linux-gnu
-```
-
-### 2. 克隆源码
-```bash
-git clone https://github.com/LineageOS/android_kernel_xiaomi_sm8250.git
+git clone https://github.com/dgmico/android_kernel_xiaomi_sm8250.git
 cd android_kernel_xiaomi_sm8250
-git checkout lineage-23.2
+git checkout root
 ```
 
-### 3. 配置并编译
+### 2. 修改代码（如有需要）
 ```bash
-# 配置 (使用 kona_defconfig 作为基础)
-make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 vendor/kona_defconfig
-
-# 合并设备配置 (可选)
-cat arch/arm64/configs/vendor/xiaomi/apollo.config >> .config
-make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 olddefconfig
-
-# 编译 (禁用 Werror 避免警告失败)
-make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 \
-  KCFLAGS="-Wno-error" -j$(nproc) Image.gz dtbs
+# 修改内核代码后提交
+git add .
+git commit -m "Your changes"
+git push origin root
 ```
 
-### 4. 打包 AnyKernel3
-```bash
-DEVICE=apollo
-VERSION=$(make kernelversion)
+### 3. GitHub Actions 自动构建
+- 推送代码后自动触发构建
+- 或手动触发：https://github.com/dgmico/android_kernel_xiaomi_sm8250/actions → Build Kernel → Run workflow
 
-mkdir -p AnyKernel3/dtbs
-cp arch/arm64/boot/Image.gz AnyKernel3/
-cp arch/arm64/boot/dts/vendor/qcom/${DEVICE}*.dtb AnyKernel3/dtbs/
-cp arch/arm64/boot/dts/vendor/qcom/${DEVICE}*.dtbo AnyKernel3/dtbs/
-
-# 创建 anykernel.sh
-cat > AnyKernel3/anykernel.sh << 'EOF'
-properties() {
-  kernel.string=Kernel
-  kernel.device=DEVICE_PLACEHOLDER
-  kernel.version=VERSION_PLACEHOLDER
-  kernel.arch=arm64
-  kernel.platform=android
-}
-EOF
-
-zip -r kernel-${DEVICE}-${VERSION}.zip AnyKernel3/
-```
+### 4. 下载产物
+构建完成后在 Actions 页面的 Artifacts 中下载 kernel-*.zip
 
 ---
 
-## GitHub Actions 工作流
+## GitHub Actions 工作流配置
 
-### 完整 workflow 文件
+### 完整 workflow 文件 (.github/workflows/build-kernel.yml)
 ```yaml
 name: Build Kernel
 
@@ -123,7 +117,8 @@ jobs:
           if [ -f arch/arm64/configs/vendor/xiaomi/${DEVICE}.config ]; then
             cat arch/arm64/configs/vendor/xiaomi/${DEVICE}.config >> .config
           fi
-          make CROSS_COMPILE=aarch64-linux-gnu- ARCH=arm64 olddefconfig
+          make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
+              ARCH=arm64 olddefconfig
 
       - name: Build kernel
         run: |
@@ -153,10 +148,7 @@ jobs:
 ## 刷入方式
 
 ```bash
-# 通过 fastboot (需要 boot.img)
-fastboot flash boot boot.img
-
-# 通过 TWRP/KernelFlare (使用 zip)
+# 通过 TWRP/KernelFlare
 adb push kernel-apollo-*.zip /sdcard/
 # 在 recovery 中刷入
 ```
