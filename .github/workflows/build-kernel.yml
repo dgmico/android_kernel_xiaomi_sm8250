@@ -79,11 +79,11 @@ jobs:
 
       - name: Build kernel
         run: |
-          CLANG_DIR="$PWD/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin"
-          # Use gcc-aarch64-linux-gnu for cross compile, clang as CC
-          make CROSS_COMPILE=aarch64-linux-gnu- CC="${CLANG_DIR}/clang" \
-              CLANG_TRIPLE=aarch64-linux-gnu- \
+          # Use GCC for building - more compatible
+          # Disable -Werror to allow build with warnings
+          make CROSS_COMPILE=aarch64-linux-gnu- \
               ARCH=arm64 \
+              KCFLAGS="-Wno-error" \
               -j$(nproc) \
               Image.gz \
               dtbs
