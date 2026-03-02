@@ -48,23 +48,12 @@ jobs:
             zip \
             gcc-aarch64-linux-gnu
 
-      - name: Download Clang
-        run: |
-          wget -q https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz
-          tar -xf clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz
-
-      - name: Verify Clang
-        run: |
-          ls clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/
-          clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/clang --version
-
       - name: Setup defconfig
         run: |
           DEVICE="${{ github.event.inputs.device || 'apollo' }}"
-          CLANG_DIR="$PWD/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin"
 
           # First use kona_defconfig as base, then merge vendor config
-          # Use gcc-aarch64-linux-gnu for host tools, clang for cross compile
+          # Use gcc-aarch64-linux-gnu for everything
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
               ARCH=arm64 vendor/kona_defconfig
 
@@ -73,8 +62,8 @@ jobs:
             cat arch/arm64/configs/vendor/xiaomi/${DEVICE}.config >> .config
           fi
 
-          # Update config - use clang for kernel build
-          make CROSS_COMPILE=aarch64-linux-gnu- CC="${CLANG_DIR}/clang" \
+          # Update config
+          make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
               ARCH=arm64 olddefconfig
 
       - name: Build kernel
