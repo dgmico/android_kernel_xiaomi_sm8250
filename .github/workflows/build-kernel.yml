@@ -1,0 +1,150 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - lineage-23.2
+      - root
+  pull_request:
+    branches:
+      - lineage-23.2
+      - root
+  workflow_dispatch:
+    inputs:
+      device:
+        description: 'Device codename (e.g., apollo)'
+        required: false
+        default: 'apollo'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Get kernel version
+        id: kernel-version
+        run: |
+          VERSION=$(make kernelversion)
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Kernel version: $VERSION"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            bc \
+            bison \
+            flex \
+            libssl-dev \
+            libelf-dev \
+            python3 \
+            python3-pip \
+            crossbuild-essential-arm64 \
+            zip \
+            gcc-aarch64-linux-gnu
+
+      - name: Download Clang
+        run: |
+          wget -q https://github.com/llvm/llvm-project/releases/download/llvmorg-17.0.6/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz
+          tar -xf clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04.tar.xz
+
+      - name: Verify Clang
+        run: |
+          ls clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/
+          clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin/clang --version
+
+      - name: Setup defconfig
+        run: |
+          DEVICE="${{ github.event.inputs.device || 'apollo' }}"
+          CLANG_DIR="$PWD/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin"
+
+          # First use kona_defconfig as base, then merge vendor config
+          # Use gcc-aarch64-linux-gnu for host tools, clang for cross compile
+          make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
+              ARCH=arm64 vendor/kona_defconfig
+
+          # Merge device specific config
+          if [ -f arch/arm64/configs/vendor/xiaomi/${DEVICE}.config ]; then
+            cat arch/arm64/configs/vendor/xiaomi/${DEVICE}.config >> .config
+          fi
+
+          # Update config - use clang for kernel build
+          make CROSS_COMPILE=aarch64-linux-gnu- CC="${CLANG_DIR}/clang" \
+              ARCH=arm64 olddefconfig
+
+      - name: Build kernel
+        run: |
+          CLANG_DIR="$PWD/clang+llvm-17.0.6-x86_64-linux-gnu-ubuntu-22.04/bin"
+          # Use gcc-aarch64-linux-gnu for cross compile, clang as CC
+          make CROSS_COMPILE=aarch64-linux-gnu- CC="${CLANG_DIR}/clang" \
+              CLANG_TRIPLE=aarch64-linux-gnu- \
+              ARCH=arm64 \
+              -j$(nproc) \
+              Image.gz \
+              dtbs
+
+      - name: Create AnyKernel3 package
+        run: |
+          DEVICE="${{ github.event.inputs.device || 'apollo' }}"
+          VERSION="${{ steps.kernel-version.version }}"
+
+          # Create AnyKernel3 directory structure
+          mkdir -p AnyKernel3/dtbs
+
+          # Copy kernel
+          cp arch/arm64/boot/Image.gz AnyKernel3/
+
+          # Copy device tree files
+          cp arch/arm64/boot/dts/qcom/${DEVICE}*.dtb AnyKernel3/dtbs/ 2>/dev/null || true
+          cp arch/arm64/boot/dts/vendor/qcom/${DEVICE}*.dtb AnyKernel3/dtbs/ 2>/dev/null || true
+          cp arch/arm64/boot/dts/vendor/qcom/${DEVICE}*.dtbo AnyKernel3/dtbs/ 2>/dev/null || true
+
+          # Create anykernel.sh using printf
+          printf '# AnyKernel3 Installation Script\n\n' > AnyKernel3/anykernel.sh
+          printf 'properties() {\n' >> AnyKernel3/anykernel.sh
+          printf '  kernel.string=Kernel by GitHub Actions\n' >> AnyKernel3/anykernel.sh
+          printf '  kernel.device=%s\n' "$DEVICE" >> AnyKernel3/anykernel.sh
+          printf '  kernel.version=%s\n' "$VERSION" >> AnyKernel3/anykernel.sh
+          printf '  kernel.arch=arm64\n' >> AnyKernel3/anykernel.sh
+          printf '  kernel.platform=android\n' >> AnyKernel3/anykernel.sh
+          printf '  kernel.moduleid=kernel\n' >> AnyKernel3/anykernel.sh
+          printf '}\n\n' >> AnyKernel3/anykernel.sh
+          printf 'do_flash() {\n' >> AnyKernel3/anykernel.sh
+          printf '  ui_print "Flashing kernel..."\n' >> AnyKernel3/anykernel.sh
+          printf '  flash_image boot_image Image.gz\n' >> AnyKernel3/anykernel.sh
+          printf '  if [ -f dtbs/*.dtb ]; then\n' >> AnyKernel3/anykernel.sh
+          printf '    ui_print "Flashing device tree..."\n' >> AnyKernel3/anykernel.sh
+          printf '    flash_image dtb_image dtbs/*.dtb\n' >> AnyKernel3/anykernel.sh
+          printf '  fi\n' >> AnyKernel3/anykernel.sh
+          printf '  ui_print "Done!"\n' >> AnyKernel3/anykernel.sh
+          printf '}\n' >> AnyKernel3/anykernel.sh
+
+          # Create zip
+          cd AnyKernel3
+          zip -r ../kernel-${DEVICE}-${VERSION}.zip .
+          cd ..
+
+          echo "Created kernel-${DEVICE}-${VERSION}.zip"
+          ls -la kernel-*.zip
+
+      - name: Upload kernel zip
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-zip
+          path: kernel-*.zip
+          retention-days: 7
+
+      - name: Upload all artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-artifacts
+          path: |
+            arch/arm64/boot/Image.gz
+            arch/arm64/boot/dts/**/*.dtb
+            kernel-*.zip
+          retention-days: 7
