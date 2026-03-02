@@ -10,6 +10,18 @@
 
 ---
 
+## 问题记录
+遇到的问题记录在 `.claude/troubleshooting/` 目录下，按编号命名：
+- `001-yaml-syntax-error.md` - YAML 语法错误
+- `002-compiler-not-found.md` - 编译器未找到
+- `003-defconfig-path-error.md` - defconfig 路径错误
+- `004-lockdep-error.md` - lockdep.c 编译错误
+- `005-traceh-not-found.md` - trace.h 文件未找到
+- `006-werror-warning.md` - 警告被视为错误
+- `007-git-clone-slow.md` - git clone 太慢
+
+---
+
 ## 构建流程
 
 ### 1. 环境配置
@@ -91,6 +103,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
       - name: Install dependencies
         run: |
@@ -133,54 +147,6 @@ jobs:
           name: kernel-zip
           path: kernel-*.zip
 ```
-
----
-
-## 常见问题记录
-
-### 问题 1: YAML 语法错误
-- **错误**: `Invalid workflow file - You have an error in your yaml syntax`
-- **原因**: heredoc 中的嵌套内容导致 YAML 解析失败
-- **解决**: 使用 `printf` 分行写入脚本，或将脚本内容改为单行
-
-### 问题 2: 编译器未找到
-- **错误**: `compiler '.../aarch64-linux-gnu-gcc' not found`
-- **原因**:
-  1. Clang 17 自带交叉编译器，但路径命名不同
-  2. Kconfig 需要 GCC 风格工具链
-- **解决**: 安装 `gcc-aarch64-linux-gnu`，使用 `aarch64-linux-gnu-` 作为 CROSS_COMPILE
-
-### 问题 3: defconfig 路径错误
-- **错误**: `Can't find default configuration "arch/arm64/configs/kona_defconfig"`
-- **原因**: kona_defconfig 在 vendor 子目录
-- **解决**: 使用完整路径 `vendor/kona_defconfig`
-
-### 问题 4: lockdep.c 编译错误
-- **错误**: `error: use of undeclared identifier 'nested'`
-- **原因**: 内核源码 bug，nested 参数已移除但调用处未更新
-- **解决**: 修改 `kernel/locking/lockdep.c` 第 4008 行
-  ```c
-  // 将
-  if (__lock_release(lock, nested, ip))
-  // 改为
-  if (__lock_release(lock, 0, ip))
-  ```
-
-### 问题 5: trace.h 文件未找到
-- **错误**: `fatal error: './trace.h' file not found`
-- **原因**: Clang 与内联汇编或 trace 头文件不兼容
-- **解决**:
-  1. 使用 GCC 替代 Clang
-  2. 或添加 `KCFLAGS="-Wno-error"` 忽略警告
-
-### 问题 6: 警告被视为错误
-- **错误**: `error: this 'if' clause does not guard... [-Werror=misleading-indentation]`
-- **原因**: CONFIG_CC_WERROR 启用，警告被当作错误
-- **解决**: 添加 `KCFLAGS="-Wno-error"` 禁用
-
-### 问题 7: git clone 太慢
-- **原因**: `fetch-depth: 0` 下载完整 git 历史
-- **解决**: 使用 `fetch-depth: 1` 浅克隆
 
 ---
 

@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:download.lineageos.org)",
+      "WebSearch",
+      "Bash(gh search:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(git:*)",
+      "Bash(gh run:*)",
+      "Bash(python3:*)",
+      "Bash(head:*)",
+      "Bash(zcat:*)",
+      "Bash(gh api:*)",
+      "Bash(unzip:*)"
+    ]
+  }
+}
