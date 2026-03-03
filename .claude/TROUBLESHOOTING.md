@@ -19,8 +19,8 @@
 - **解决**: 修改 kernel/locking/lockdep.c 第 4008 行，将 nested 改为 0
 
 ### 005: trace.h 文件未找到
-- **原因**: Clang 与 trace 头文件不兼容
-- **解决**: 统一使用 GCC 替代 Clang
+- **原因**: kona_defconfig 缺少必要的 trace 头文件配置
+- **解决**: 使用 gki_defconfig 作为基础配置（包含所有必需的 trace 配置）
 
 ### 006: 警告被视为错误
 - **原因**: CONFIG_CC_WERROR 启用
