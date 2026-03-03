@@ -40,15 +40,6 @@ jobs:
           cd $HOME/toolchain
           wget -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/archive/refs/heads/lineage-23.2.tar.gz -O gcc.tar.gz
           tar -xzf gcc.tar.gz
-          echo "TOOLCHAIN_PATH=$HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin" >> $GITHUB_ENV
-          echo "PATH=$TOOLCHAIN_PATH:/usr/bin:/bin" >> $GITHUB_ENV
-
-      - name: Cache GCC
-        if: false
-        uses: actions/cache@v4
-        with:
-          path: ~/toolchain
-          key: Linux-gcc-9.3
 
       - name: Setup KernelSU
         run: |
@@ -67,8 +58,9 @@ jobs:
           LTO: thin
           CCACHE_DIR: /tmp/ccache
         run: |
-          ls -la $TOOLCHAIN_PATH
-          which aarch64-linux-gnu-gcc || echo "aarch64-linux-gnu-gcc not found"
+          export PATH="$HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin:$PATH"
+          ls -la $HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin
+          which aarch64-linux-gnu-gcc
           ccache -M 10G
           ccache -z
           make vendor/kona-perf_defconfig
