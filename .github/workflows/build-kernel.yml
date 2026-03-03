@@ -61,6 +61,12 @@ jobs:
             cat arch/arm64/configs/vendor/xiaomi/${DEVICE}.config >> .config
           fi
 
+          # Disable problematic options for sm8250
+          echo "# Disable problematic options" >> .config
+          echo "CONFIG_NET_IPVTI=n" >> .config
+          echo "CONFIG_IP_GRE=n" >> .config
+          echo "CONFIG_NVDIMM_PMEM=n" >> .config
+
           # Update config
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
               ARCH=arm64 olddefconfig
