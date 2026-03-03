@@ -36,4 +36,4 @@
 
 ### 009: trace.h 文件未找到 / 驱动编译错误
 - **原因**: 内核配置不正确导致编译各种驱动时出错
-- **解决**: 尝试使用 vendor/kona-perf_defconfig 作为基础配置
+- **解决**: 使用 gki_defconfig 并禁用有问题的 camera 驱动

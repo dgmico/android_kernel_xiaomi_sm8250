@@ -52,12 +52,9 @@ jobs:
         run: |
           DEVICE="${{ github.event.inputs.device || 'apollo' }}"
 
-          # Clone LineageOS device repo to get their kernel config
-          git clone --depth 1 https://github.com/LineageOS/android_device_xiaomi_apollon.git /tmp/device_repo
-
-          # Use kona-perf_defconfig as base
+          # Use gki_defconfig as base (has trace support)
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
-              ARCH=arm64 vendor/kona-perf_defconfig
+              ARCH=arm64 gki_defconfig
 
           # Merge sm8250-common config
           cat arch/arm64/configs/vendor/xiaomi/sm8250-common.config >> .config
@@ -66,6 +63,13 @@ jobs:
           if [ -f arch/arm64/configs/vendor/xiaomi/${DEVICE}.config ]; then
             cat arch/arm64/configs/vendor/xiaomi/${DEVICE}.config >> .config
           fi
+
+          # Disable problematic modules (set to =n to avoid building)
+          echo "CONFIG_MSM_CAMERA=m" >> .config
+          echo "CONFIG_MSM_CAMERA_SENSOR=m" >> .config
+          echo "CONFIG_QCOM_CAMERA=m" >> .config
+          echo "CONFIG_TECHPACK_CAMERA=m" >> .config
+          echo "CONFIG_VIDEO_MSMB_CAMERA=m" >> .config
 
           # Update config
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
