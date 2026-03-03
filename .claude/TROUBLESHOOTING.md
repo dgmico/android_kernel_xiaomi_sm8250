@@ -34,6 +34,6 @@
 - **原因**: olddefconfig 步骤仍使用 clang 作为 CC
 - **解决**: 统一使用 GCC，移除 Clang 下载步骤
 
-### 009: gki_defconfig 导致编译错误
-- **原因**: gki_defconfig 启用了与 sm8250 内核不兼容的驱动（ip_gre, nvdim_pmem）
-- **解决**: 使用 vendor/kon_defconfig + sm8250-common.config，将有问题模块设为模块（=m）而不是禁用（=n）
+### 009: trace.h 文件未找到 / 驱动编译错误
+- **原因**: 内核配置不正确导致编译各种驱动时出错
+- **解决**: 尝试使用 vendor/kona-perf_defconfig 作为基础配置

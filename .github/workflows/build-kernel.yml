@@ -52,9 +52,12 @@ jobs:
         run: |
           DEVICE="${{ github.event.inputs.device || 'apollo' }}"
 
-          # Use kona_defconfig as base (sm8250 platform)
+          # Clone LineageOS device repo to get their kernel config
+          git clone --depth 1 https://github.com/LineageOS/android_device_xiaomi_apollon.git /tmp/device_repo
+
+          # Use kona-perf_defconfig as base
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
-              ARCH=arm64 vendor/kona_defconfig
+              ARCH=arm64 vendor/kona-perf_defconfig
 
           # Merge sm8250-common config
           cat arch/arm64/configs/vendor/xiaomi/sm8250-common.config >> .config
@@ -63,12 +66,6 @@ jobs:
           if [ -f arch/arm64/configs/vendor/xiaomi/${DEVICE}.config ]; then
             cat arch/arm64/configs/vendor/xiaomi/${DEVICE}.config >> .config
           fi
-
-          # Disable problematic modules
-          echo "CONFIG_NVDIMM=m" >> .config
-          echo "CONFIG_IP_GRE=m" >> .config
-          echo "CONFIG_NET_IPVTI=m" >> .config
-          echo "CONFIG_IP_VTI=m" >> .config
 
           # Update config
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
