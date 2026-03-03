@@ -48,7 +48,7 @@ jobs:
         run: |
           ccache -M 10G
           ccache -z
-          make vendor/kona-perf_defconfig
+          make vendor/kona-perf_defconfig ARCH=arm64
           make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LTO=thin
           ccache -s
 
