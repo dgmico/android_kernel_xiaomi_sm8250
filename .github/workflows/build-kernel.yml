@@ -31,8 +31,7 @@ jobs:
             python3 \
             python3-pip \
             ccache \
-            gcc-aarch64-linux-gnu \
-            g++-aarch64-linux-gnu
+            clang
 
       - name: Setup KernelSU
         run: |
@@ -49,7 +48,7 @@ jobs:
           ccache -M 10G
           ccache -z
           make vendor/kona-perf_defconfig ARCH=arm64
-          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LTO=thin
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- CC=clang LTO=thin
           ccache -s
 
       - name: Upload artifacts
