@@ -13,9 +13,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install dependencies and build kernel
+      - name: Install dependencies
         run: |
-          # Install build dependencies
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
@@ -31,33 +30,22 @@ jobs:
             libelf-dev \
             python3 \
             python3-pip \
-            ccache
+            ccache \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu
 
-          # Download and extract GCC toolchain
-          mkdir -p $HOME/toolchain
-          cd $HOME/toolchain
-          wget -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/archive/refs/heads/lineage-23.2.tar.gz -O gcc.tar.gz
-          tar -xzf gcc.tar.gz
-
-          # Set PATH for toolchain
-          export PATH="$HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin:$PATH"
-
-          # Verify toolchain
-          ls -la $HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin
-          which aarch64-linux-gnu-gcc
-
-          # Go back to kernel directory
-          cd $GITHUB_WORKSPACE
-
-          # Setup KernelSU
+      - name: Setup KernelSU
+        run: |
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki || true
 
-          # Enable CONFIG_KSU_MANUAL_HOOK
+      - name: Enable CONFIG_KSU_MANUAL_HOOK
+        run: |
           if ! grep -q "CONFIG_KSU_MANUAL_HOOK=y" arch/arm64/configs/vendor/xiaomi/sm8250-common.config; then
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/vendor/xiaomi/sm8250-common.config
           fi
 
-          # Build kernel
+      - name: Build kernel
+        run: |
           ccache -M 10G
           ccache -z
           make vendor/kona-perf_defconfig
