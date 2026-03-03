@@ -38,14 +38,14 @@ jobs:
         run: |
           mkdir -p $HOME/toolchain
           cd $HOME/toolchain
-          wget -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/archive/refs/heads/lineage-19.2.tar.gz -O gcc.tar.gz
+          wget -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/archive/refs/heads/lineage-23.2.tar.gz -O gcc.tar.gz
           tar -xzf gcc.tar.gz
 
       - name: Cache GCC
         uses: actions/cache@v4
         with:
           path: ~/toolchain
-          key: ${{ runner.os }}-gcc-4.9-${{ hashFiles('$HOME/toolchain/*.tar.gz') }}
+          key: ${{ runner.os }}-gcc-9.3-${{ hashFiles('$HOME/toolchain/*.tar.gz') }}
 
       - name: Setup KernelSU
         run: |
@@ -59,7 +59,7 @@ jobs:
 
       - name: Build kernel
         env:
-          PATH: $HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/lineage-19.2/bin:/usr/bin:/bin
+          PATH: $HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin:/usr/bin:/bin
           CROSS_COMPILE: aarch64-linux-gnu-
           CROSS_COMPILE_ARM32: arm-linux-gnueabihf-
           LTO: thin
