@@ -52,9 +52,12 @@ jobs:
         run: |
           DEVICE="${{ github.event.inputs.device || 'apollo' }}"
 
-          # Use gki_defconfig as base (has all required configs)
+          # Use defconfig as base
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
-              ARCH=arm64 gki_defconfig
+              ARCH=arm64 defconfig
+
+          # Merge sm8250-common config
+          cat arch/arm64/configs/vendor/xiaomi/sm8250-common.config >> .config
 
           # Merge device specific config
           if [ -f arch/arm64/configs/vendor/xiaomi/${DEVICE}.config ]; then
@@ -64,14 +67,6 @@ jobs:
           # Update config
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
               ARCH=arm64 olddefconfig
-
-          # Disable problematic options for sm8250 (must be after olddefconfig)
-          echo "# Disable problematic drivers for sm8250" >> .config
-          echo "CONFIG_NET_IPVTI=n" >> .config
-          echo "CONFIG_IP_GRE=n" >> .config
-          echo "CONFIG_NVDIMM_PMEM=n" >> .config
-          echo "CONFIG_IP_VTI=n" >> .config
-          echo "CONFIG_IP_GRE=n" >> .config
 
       - name: Build kernel
         run: |
