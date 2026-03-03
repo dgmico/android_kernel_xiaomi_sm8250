@@ -36,4 +36,4 @@
 
 ### 009: gki_defconfig 导致编译错误
 - **原因**: gki_defconfig 启用了与 sm8250 内核不兼容的驱动（ip_gre, nvdim_pmem）
-- **解决**: 使用 defconfig + sm8250-common.config 作为基础配置
+- **解决**: 使用 vendor/kon_defconfig + sm8250-common.config，将有问题模块设为模块（=m）而不是禁用（=n）

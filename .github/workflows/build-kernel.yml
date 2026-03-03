@@ -52,9 +52,9 @@ jobs:
         run: |
           DEVICE="${{ github.event.inputs.device || 'apollo' }}"
 
-          # Use defconfig as base
+          # Use kona_defconfig as base (sm8250 platform)
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
-              ARCH=arm64 defconfig
+              ARCH=arm64 vendor/kona_defconfig
 
           # Merge sm8250-common config
           cat arch/arm64/configs/vendor/xiaomi/sm8250-common.config >> .config
@@ -63,6 +63,12 @@ jobs:
           if [ -f arch/arm64/configs/vendor/xiaomi/${DEVICE}.config ]; then
             cat arch/arm64/configs/vendor/xiaomi/${DEVICE}.config >> .config
           fi
+
+          # Disable problematic modules
+          echo "CONFIG_NVDIMM=m" >> .config
+          echo "CONFIG_IP_GRE=m" >> .config
+          echo "CONFIG_NET_IPVTI=m" >> .config
+          echo "CONFIG_IP_VTI=m" >> .config
 
           # Update config
           make CROSS_COMPILE=aarch64-linux-gnu- CC=gcc \
