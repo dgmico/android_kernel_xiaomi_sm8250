@@ -32,6 +32,12 @@ jobs:
           curl -LO https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9/+archive/refs/heads/master.tar.gz
           mkdir gcc32 && tar -xzf master.tar.gz -C gcc32
 
+      - name: Fetch KernelSU
+        run: |
+          git clone https://github.com/tiann/KernelSU.git drivers/kernelsu
+          cd drivers/kernelsu
+          git checkout v3.1.0
+
       - name: Build Kernel
         run: |
           export PATH=$GITHUB_WORKSPACE/toolchain/clang/bin:$GITHUB_WORKSPACE/toolchain/gcc64/bin:$GITHUB_WORKSPACE/toolchain/gcc32/bin:$PATH
