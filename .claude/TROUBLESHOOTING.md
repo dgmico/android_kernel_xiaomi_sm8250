@@ -33,3 +33,7 @@
 ### 008: 部分步骤仍使用 Clang
 - **原因**: olddefconfig 步骤仍使用 clang 作为 CC
 - **解决**: 统一使用 GCC，移除 Clang 下载步骤
+
+### 009: gki_defconfig 导致编译错误
+- **原因**: gki_defconfig 启用了与 sm8250 内核不兼容的驱动（ip_gre, nvdim_pmem）
+- **解决**: 在配置中禁用有问题的驱动
