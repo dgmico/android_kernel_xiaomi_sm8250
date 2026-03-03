@@ -12,11 +12,10 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Install build dependencies
+      - name: Install dependencies and build kernel
         run: |
+          # Install build dependencies
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
@@ -34,33 +33,31 @@ jobs:
             python3-pip \
             ccache
 
-      - name: Setup GCC toolchain
-        run: |
+          # Download and extract GCC toolchain
           mkdir -p $HOME/toolchain
           cd $HOME/toolchain
           wget -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/archive/refs/heads/lineage-23.2.tar.gz -O gcc.tar.gz
           tar -xzf gcc.tar.gz
 
-      - name: Setup KernelSU
-        run: |
+          # Set PATH for toolchain
+          export PATH="$HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin:$PATH"
+
+          # Verify toolchain
+          ls -la $HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin
+          which aarch64-linux-gnu-gcc
+
+          # Go back to kernel directory
+          cd $GITHUB_WORKSPACE
+
+          # Setup KernelSU
           curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki || true
 
-      - name: Enable CONFIG_KSU_MANUAL_HOOK
-        run: |
+          # Enable CONFIG_KSU_MANUAL_HOOK
           if ! grep -q "CONFIG_KSU_MANUAL_HOOK=y" arch/arm64/configs/vendor/xiaomi/sm8250-common.config; then
             echo "CONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/vendor/xiaomi/sm8250-common.config
           fi
 
-      - name: Build kernel
-        env:
-          CROSS_COMPILE: aarch64-linux-gnu-
-          CROSS_COMPILE_ARM32: arm-linux-gnueabihf-
-          LTO: thin
-          CCACHE_DIR: /tmp/ccache
-        run: |
-          export PATH="$HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin:$PATH"
-          ls -la $HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3/lineage-23.2/bin
-          which aarch64-linux-gnu-gcc
+          # Build kernel
           ccache -M 10G
           ccache -z
           make vendor/kona-perf_defconfig
