@@ -1,0 +1,84 @@
+name: Build Kernel
+
+on:
+  push:
+    branches:
+      - sukisu-claude
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            git \
+            curl \
+            wget \
+            unzip \
+            xz-utils \
+            bc \
+            bison \
+            flex \
+            libssl-dev \
+            libelf-dev \
+            python3 \
+            python3-pip
+
+      - name: Setup Android SDK
+        run: |
+          mkdir -p $HOME/android-sdk
+          cd $HOME/android-sdk
+          wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
+          unzip -q cmdline-tools.zip
+          mkdir -p cmdline-tools/latest
+          mv cmdline-tools/* cmdline-tools/latest/ 2>/dev/null || true
+          export ANDROID_HOME=$HOME/android-sdk
+          export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
+          yes | sdkmanager --licenses > /dev/null 2>&1 || true
+          sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0" "ndk;26d" > /dev/null 2>&1
+          echo "ANDROID_HOME=$HOME/android-sdk" >> $GITHUB_ENV
+          echo "PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/ndk/26d" >> $GITHUB_ENV
+
+      - name: Setup GCC toolchain
+        run: |
+          mkdir -p $HOME/toolchain
+          cd $HOME/toolchain
+          wget -q https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/archive/refs/heads/lineage-19.2.tar.gz -O gcc.tar.gz
+          tar -xzf gcc.tar.gz
+          export PATH=$HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/lineage-19.2/bin:$PATH
+          echo "PATH=$PATH:$HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/lineage-19.2/bin" >> $GITHUB_ENV
+
+      - name: Setup KernelSU
+        run: |
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki
+
+      - name: Enable CONFIG_KSU_MANUAL_HOOK
+        run: |
+          echo "CONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/vendor/xiaomi/sm8250-common.config
+
+      - name: Build kernel
+        env:
+          CC: aarch64-linux-gnu-
+          CROSS_COMPILE: aarch64-linux-gnu-
+          CROSS_COMPILE_ARM32: arm-linux-gnueabihf-
+          LTO: thin
+        run: |
+          export PATH=$PATH:$HOME/toolchain/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-android-4.9/lineage-19.2/bin
+          make vendor/sm8250-perf_defconfig
+          make -j$(nproc) ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- LTO=thin
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-build
+          path: |
+            arch/arm64/boot/Image
+            arch/arm64/boot/dts/**/*.dtb
+            vmlinux
