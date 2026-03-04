@@ -1,12 +1,22 @@
 # Build Errors History
 
+## 2026-03-04 16:26 - Run 22661172570
+
+**错误**: `unknown type name 'compat_uptr_t'`
+
+**原因**: Ubuntu 系统 Clang 版本与 Android 4.19 内核不兼容
+
+**修复**: 使用 ClangBuiltLinux 提供的预编译工具链 (clang-17 + aarch64-linux-gnu-13)
+
+---
+
 ## 2026-03-04 16:23 - Run 22661077320
 
 **错误**: `unknown type name 'compat_uptr_t'`, `invalid use of undefined type 'struct rcu_tasks'`
 
 **原因**: 系统 Clang 版本太新 (16+)，与 Android 4.19 内核不兼容
 
-**修复**: 使用 clang-14 替代默认 clang，设置 `CC=clang-14`
+**修复**: 使用 clang-14 替代默认 clang，设置 `CC=clang-14` (无效)
 
 ---
 

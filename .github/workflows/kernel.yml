@@ -18,15 +18,22 @@ jobs:
       - name: 安装依赖
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git curl libssl-dev libelf-dev bc flex bison python3 clang-14 gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+          sudo apt-get install -y build-essential git curl libssl-dev libelf-dev bc flex bison python3 wget zstd
+
+      - name: 下载 Android Clang 工具链
+        run: |
+          wget -q https://github.com/ClangBuiltLinux/tc-build/releases/download/2024-01-06/aarch64-linux-gnu-13.0.0.tar.zst -O /tmp/aarch64.tar.zst
+          sudo tar -C / -xf /tmp/aarch64.tar.zst
+          wget -q https://github.com/ClangBuiltLinux/tc-build/releases/download/2024-01-06/clang-17.0.0.tar.zst -O /tmp/clang.tar.zst
+          sudo tar -C / -xf /tmp/clang.tar.zst
 
       - name: 设置环境变量
         run: |
           echo "ARCH=arm64" >> $GITHUB_ENV
-          echo "CC=clang-14" >> $GITHUB_ENV
-          echo "LLVM_IAS=0" >> $GITHUB_ENV
-          echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
-          echo "CROSS_COMPILE_ARM32=arm-linux-gnueabihf-" >> $GITHUB_ENV
+          echo "CC=/usr/bin/clang" >> $GITHUB_ENV
+          echo "CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV
+          echo "CROSS_COMPILE=/usr/bin/aarch64-linux-gnu-" >> $GITHUB_ENV
+          echo "CROSS_COMPILE_ARM32=/usr/bin/arm-linux-gnueabihf-" >> $GITHUB_ENV
 
       - name: 配置内核
         run: make vendor/xiaomi/apollo.config
