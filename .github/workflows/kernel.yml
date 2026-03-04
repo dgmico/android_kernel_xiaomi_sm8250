@@ -31,27 +31,29 @@ jobs:
           unzip -q /tmp/ndk.zip -d /opt/
           ls /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/ | head -5
 
+      - name: 配置工具链路径
+        run: |
+          # 创建符号链接到系统路径
+          ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang /usr/local/bin/aarch64-linux-android33-clang
+          ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-gcc /usr/local/bin/aarch64-linux-android33-gcc
+          ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/clang /usr/local/bin/clang
+          which aarch64-linux-android33-clang
+          which clang
+
       - name: 设置环境变量
         run: |
-          export PATH="/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
           echo "ARCH=arm64" >> $GITHUB_ENV
           echo "CC=aarch64-linux-android33-clang" >> $GITHUB_ENV
           echo "HOSTCC=clang" >> $GITHUB_ENV
           echo "CROSS_COMPILE=aarch64-linux-android33-" >> $GITHUB_ENV
-          echo "PATH=/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_ENV
 
       - name: 配置内核
         run: |
-          export PATH="/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
-          export CC=aarch64-linux-android33-clang
-          export HOSTCC=clang
           cp arch/arm64/configs/vendor/xiaomi/apollo.config .config
           yes "" | make oldconfig
 
       - name: 编译内核
-        run: |
-          export PATH="/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
-          make -j$(nproc) Image.gz-dtb
+        run: make -j$(nproc) Image.gz-dtb
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
