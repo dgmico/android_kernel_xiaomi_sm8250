@@ -68,6 +68,9 @@ jobs:
           export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
           cp arch/arm64/configs/vendor/xiaomi/apollo.config .config
           yes "" | make oldconfig
+          # 禁用 CONFIG_COMPAT 避免 compat_uptr_t 未定义错误
+          sed -i 's/CONFIG_COMPAT=y/# CONFIG_COMPAT is not set/' .config
+          grep CONFIG_COMPAT .config
 
       - name: 编译内核
         run: make -j$(nproc) Image.gz-dtb

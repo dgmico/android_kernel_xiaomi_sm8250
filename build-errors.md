@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 17:50 - Run 22663782809
+
+**错误**: `unknown type name 'compat_uptr_t'`, `incomplete definition of type 'struct rcu_tasks'`
+
+**原因**: CONFIG_COMPAT 未正确设置，导致 compat_uptr_t 类型未定义
+
+**修复**: 在配置步骤中添加 `sed -i 's/CONFIG_COMPAT=y/# CONFIG_COMPAT is not set/' .config` 禁用 CONFIG_COMPAT
+
+---
+
 ## 2026-03-04 17:45 - Run 22663635661
 
 **错误**: `aarch64-linux-android33-objcopy: not found`, `unknown type name 'compat_uptr_t'`
