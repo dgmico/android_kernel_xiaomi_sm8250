@@ -36,12 +36,15 @@ jobs:
           export PATH="/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
           echo "ARCH=arm64" >> $GITHUB_ENV
           echo "CC=aarch64-linux-android33-clang" >> $GITHUB_ENV
+          echo "HOSTCC=clang" >> $GITHUB_ENV
           echo "CROSS_COMPILE=aarch64-linux-android33-" >> $GITHUB_ENV
           echo "PATH=/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_ENV
 
       - name: 配置内核
         run: |
           export PATH="/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          export CC=aarch64-linux-android33-clang
+          export HOSTCC=clang
           cp arch/arm64/configs/vendor/xiaomi/apollo.config .config
           yes "" | make oldconfig
 
