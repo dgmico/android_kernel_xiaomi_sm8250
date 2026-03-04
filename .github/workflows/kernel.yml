@@ -39,13 +39,19 @@ jobs:
           ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/clang /usr/local/bin/clang
           # 创建 armv8a clang 链接 (某些配置需要)
           ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang /usr/local/bin/aarch64-linux-android33
-          # 创建 ld 链接 (使用系统 ld.aarch6464 或创建 wrapper)
-          ln -sf /usr/bin/ld /usr/local/bin/aarch64-linux-android33-ld
-          # 备份并使用 gcc-aarch64-linux-gnu 的 ld
+          # 创建 ld 链接 (使用系统 ld.aarch6464)
           ln -sf /usr/bin/aarch64-linux-gnu-ld /usr/local/bin/aarch64-linux-android33-ld
+          # 创建 objdump, nm, ar 链接 (NDK 不提供这些工具，使用系统交叉编译工具链)
+          ln -sf /usr/bin/aarch64-linux-gnu-objdump /usr/local/bin/aarch64-linux-android33-objdump
+          ln -sf /usr/bin/aarch64-linux-gnu-nm /usr/local/bin/aarch64-linux-android33-nm
+          ln -sf /usr/bin/aarch64-linux-gnu-ar /usr/local/bin/aarch64-linux-android33-ar
+          ln -sf /usr/bin/aarch64-linux-gnu-strip /usr/local/bin/aarch64-linux-android33-strip
           which aarch64-linux-android33-clang
           which aarch64-linux-android33-gcc
           which aarch64-linux-android33-ld
+          which aarch64-linux-android33-objdump
+          which aarch64-linux-android33-nm
+          which aarch64-linux-android33-ar
           which clang
 
       - name: 设置环境变量
