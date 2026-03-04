@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 18:00 - Run 22663988084
+
+**错误**: `incomplete definition of type 'struct rcu_tasks'`, `use of undeclared identifier 'RTGS_PRE_WAIT_GP'`
+
+**原因**: CONFIG_TASKS_RCU 未在配置中显式设置，导致 struct rcu_tasks 完整定义被条件编译跳过，但 call_rcu_tasks_generic 函数仍在编译
+
+**修复**: 在配置步骤中添加 `sed -i 's/# CONFIG_TASKS_RCU is not set/CONFIG_TASKS_RCU=y/' .config` 显式启用 CONFIG_TASKS_RCU
+
+---
+
 ## 2026-03-04 17:50 - Run 22663782809
 
 **错误**: `unknown type name 'compat_uptr_t'`, `incomplete definition of type 'struct rcu_tasks'`

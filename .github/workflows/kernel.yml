@@ -70,7 +70,9 @@ jobs:
           yes "" | make oldconfig
           # 禁用 CONFIG_COMPAT 避免 compat_uptr_t 未定义错误
           sed -i 's/CONFIG_COMPAT=y/# CONFIG_COMPAT is not set/' .config
-          grep CONFIG_COMPAT .config
+          # 启用 CONFIG_TASKS_RCU 避免 struct rcu_tasks 不完整错误
+          sed -i 's/# CONFIG_TASKS_RCU is not set/CONFIG_TASKS_RCU=y/' .config
+          grep -E "CONFIG_COMPAT|CONFIG_TASKS_RCU" .config
 
       - name: 编译内核
         run: make -j$(nproc) Image.gz-dtb
