@@ -68,8 +68,9 @@ jobs:
           export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
           cp arch/arm64/configs/vendor/xiaomi/apollo.config .config
           yes "" | make oldconfig
-          # 禁用 CONFIG_COMPAT 避免 compat_uptr_t 未定义错误
-          sed -i 's/CONFIG_COMPAT=y/# CONFIG_COMPAT is not set/' .config
+          # 启用 CONFIG_COMPAT 解决 compat_uptr_t 类型未定义错误
+          # filter.h 中的 struct compat_sock_fprog 需要 compat_uptr_t 类型
+          sed -i 's/# CONFIG_COMPAT is not set/CONFIG_COMPAT=y/' .config
           # 启用 CONFIG_TASKS_RCU 避免 struct rcu_tasks 不完整错误
           sed -i 's/# CONFIG_TASKS_RCU is not set/CONFIG_TASKS_RCU=y/' .config
           grep -E "CONFIG_COMPAT|CONFIG_TASKS_RCU" .config

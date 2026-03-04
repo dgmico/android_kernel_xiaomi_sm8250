@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 18:10 - Run 22664578326
+
+**错误**: `unknown type name 'compat_uptr_t'`
+
+**原因**: 之前禁用 CONFIG_COMPAT 后，filter.h 中的 struct compat_sock_fprog 仍需要 compat_uptr_t 类型，但该类型只在 CONFIG_COMPAT 启用时定义
+
+**修复**: 改为启用 CONFIG_COMPAT - 修改 sed 命令为 `sed -i 's/# CONFIG_COMPAT is not set/CONFIG_COMPAT=y/' .config`
+
+---
+
 ## 2026-03-04 18:00 - Run 22663988084
 
 **错误**: `incomplete definition of type 'struct rcu_tasks'`, `use of undeclared identifier 'RTGS_PRE_WAIT_GP'`
