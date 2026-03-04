@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 16:17 - Run 22660882476
+
+**错误**: `compiler 'aarch64-linux-gnu-gcc' not found`
+
+**原因**: 设置 CC=clang 后，Kconfig oldconfig 阶段仍需要交叉编译工具链验证配置
+
+**修复**: 同时安装 clang 和交叉编译工具链 `gcc-aarch64-linux-gnu g++-aarch64-linux-gnu`
+
+---
+
 ## 2026-03-04 16:14 - Run 22660624928
 
 **错误**: 
