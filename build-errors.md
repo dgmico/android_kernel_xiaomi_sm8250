@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 17:40 - Run 22663250408
+
+**错误**: `aarch64-linux-android33-objdump: not found`, `aarch64-linux-android33-nm: not found`, `aarch64-linux-android33-ar: not found`, `unknown type name 'compat_uptr_t'`
+
+**原因**: NDK 工具链缺少 objdump、nm、ar 等工具，需要使用系统交叉编译工具链
+
+**修复**: 添加符号链接 aarch64-linux-android33-objdump/nm/ar/strip 指向 /usr/bin/aarch64-linux-gnu-*
+
+---
+
 ## 2026-03-04 17:30 - Run 22663014030
 
 **错误**: `linker 'aarch64-linux-android33-ld' not found`
