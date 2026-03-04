@@ -33,17 +33,22 @@ jobs:
 
       - name: 设置环境变量
         run: |
+          export PATH="/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
           echo "ARCH=arm64" >> $GITHUB_ENV
-          echo "CC=/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang" >> $GITHUB_ENV
-          echo "CROSS_COMPILE=/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-" >> $GITHUB_ENV
+          echo "CC=aarch64-linux-android33-clang" >> $GITHUB_ENV
+          echo "CROSS_COMPILE=aarch64-linux-android33-" >> $GITHUB_ENV
+          echo "PATH=/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" >> $GITHUB_ENV
 
       - name: 配置内核
         run: |
+          export PATH="/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
           cp arch/arm64/configs/vendor/xiaomi/apollo.config .config
           yes "" | make oldconfig
 
       - name: 编译内核
-        run: make -j$(nproc) Image.gz-dtb
+        run: |
+          export PATH="/opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin:$PATH"
+          make -j$(nproc) Image.gz-dtb
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
