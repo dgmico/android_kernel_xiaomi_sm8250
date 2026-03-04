@@ -44,3 +44,15 @@ jobs:
           name: kernel-dtb
           path: arch/arm64/boot/dts/
           retention-days: 7
+
+      - name: Telegram 通知
+        uses: appleboy/telegram-action@master
+        with:
+          to: ${{ secrets.TELEGRAM_CHAT_ID }}
+          token: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          message: |
+            🔨 *内核编译 ${{ job.status }}*
+            - 分支: ${{ github.ref }}
+            - 提交: ${{ github.sha }}
+            - Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        if: always()
