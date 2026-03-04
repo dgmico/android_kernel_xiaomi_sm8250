@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 17:45 - Run 22663635661
+
+**错误**: `aarch64-linux-android33-objcopy: not found`, `unknown type name 'compat_uptr_t'`
+
+**原因**: NDK 工具链缺少 objcopy，编译 vdso 时需要
+
+**修复**: 添加符号链接 aarch64-linux-android33-objcopy 指向 /usr/bin/aarch64-linux-gnu-objcopy
+
+---
+
 ## 2026-03-04 17:40 - Run 22663250408
 
 **错误**: `aarch64-linux-android33-objdump: not found`, `aarch64-linux-android33-nm: not found`, `aarch64-linux-android33-ar: not found`, `unknown type name 'compat_uptr_t'`
