@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 17:25 - Run 22662498461
+
+**错误**: `compiler 'aarch64-linux-android33-gcc' not found`
+
+**原因**: NDK 只提供 clang，没有独立的 gcc 二进制文件
+
+**修复**: 将 aarch64-linux-android33-gcc 符号链接指向 clang，添加 gcc-aarch64-linux-gnu 作为备用
+
+---
+
 ## 2026-03-04 16:35 - Run 22661432148
 
 **错误**: `unknown type name 'compat_uptr_t'`, `invalid use of undefined type 'struct rcu_tasks'`
