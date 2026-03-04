@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 17:30 - Run 22663014030
+
+**错误**: `linker 'aarch64-linux-android33-ld' not found`
+
+**原因**: NDK 没有独立的 ld，需要使用系统交叉编译工具链的 ld
+
+**修复**: 添加符号链接 aarch64-linux-android33-ld 指向 /usr/bin/aarch64-linux-gnu-ld
+
+---
+
 ## 2026-03-04 17:25 - Run 22662498461
 
 **错误**: `compiler 'aarch64-linux-android33-gcc' not found`
