@@ -20,7 +20,7 @@ jobs:
       - name: 安装依赖
         run: |
           apt-get update
-          apt-get install -y build-essential git curl libssl-dev libelf-dev bc flex bison python3 wget
+          apt-get install -y build-essential git curl libssl-dev libelf-dev bc flex bison python3 wget gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: 安装 unzip
         run: apt-get install -y unzip
@@ -35,9 +35,12 @@ jobs:
         run: |
           # 创建符号链接到系统路径
           ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang /usr/local/bin/aarch64-linux-android33-clang
-          ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-gcc /usr/local/bin/aarch64-linux-android33-gcc
+          ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang /usr/local/bin/aarch64-linux-android33-gcc
           ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/clang /usr/local/bin/clang
+          # 创建 armv8a clang 链接 (某些配置需要)
+          ln -sf /opt/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android33-clang /usr/local/bin/aarch64-linux-android33
           which aarch64-linux-android33-clang
+          which aarch64-linux-android33-gcc
           which clang
 
       - name: 设置环境变量
