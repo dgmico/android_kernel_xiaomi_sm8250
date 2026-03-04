@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 16:32 - Run 22661353805
+
+**错误**: `compiler 'aarch64-linux-gnu-gcc' not found`
+
+**原因**: 删除了交叉编译工具链安装，但 Kconfig oldconfig 需要它
+
+**修复**: 恢复安装 gcc-aarch64-linux-gnu g++-aarch64-linux-gnu，禁用 CONFIG_COMPAT
+
+---
+
 ## 2026-03-04 16:29 - Run 22661283680
 
 **错误**: wget 下载工具链失败
@@ -7,16 +17,6 @@
 **原因**: GitHub 下载超时或网络问题
 
 **修复**: 回退方案 - 禁用 CONFIG_COMPAT 以避免 compat_uptr_t 错误
-
----
-
-## 2026-03-04 16:26 - Run 22661172570
-
-**错误**: `unknown type name 'compat_uptr_t'`
-
-**原因**: Ubuntu 系统 Clang 版本与 Android 4.19 内核不兼容
-
-**修复**: 使用 ClangBuiltLinux 预编译工具链 (下载失败)
 
 ---
 

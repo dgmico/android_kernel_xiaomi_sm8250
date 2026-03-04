@@ -18,7 +18,7 @@ jobs:
       - name: 安装依赖
         run: |
           sudo apt-get update
-          sudo apt-get install -y build-essential git curl libssl-dev libelf-dev bc flex bison python3
+          sudo apt-get install -y build-essential git curl libssl-dev libelf-dev bc flex bison python3 gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
 
       - name: 设置环境变量
         run: |
@@ -29,17 +29,11 @@ jobs:
       - name: 配置内核
         run: |
           # 复制现有配置并禁用 COMPAT
-          if [ -f arch/arm64/configs/vendor/xiaomi/apollo.config ]; then
-            cp arch/arm64/configs/vendor/xiaomi/apollo.config .config
-          fi
+          cp arch/arm64/configs/vendor/xiaomi/apollo.config .config
           # 禁用 32-bit 兼容层
-          echo "# 禁用 32-bit 兼容以避免 compat_uptr_t 错误" >> .config
           echo "CONFIG_COMPAT=n" >> .config
           # 重新配置
           yes "" | make oldconfig KCONFIG_CONFIG=.config
-
-      - name: 配置内核
-        run: make vendor/xiaomi/apollo.config
 
       - name: 编译内核
         run: make -j$(nproc) Image.gz-dtb
