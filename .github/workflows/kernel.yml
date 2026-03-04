@@ -50,6 +50,7 @@ jobs:
 
       - name: 配置内核
         run: |
+          export PATH="/usr/local/bin:/usr/bin:/bin:$PATH"
           cp arch/arm64/configs/vendor/xiaomi/apollo.config .config
           yes "" | make oldconfig
 
