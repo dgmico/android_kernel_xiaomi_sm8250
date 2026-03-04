@@ -46,6 +46,7 @@ jobs:
           echo "CC=aarch64-linux-android33-clang" >> $GITHUB_ENV
           echo "HOSTCC=clang" >> $GITHUB_ENV
           echo "CROSS_COMPILE=aarch64-linux-android33-" >> $GITHUB_ENV
+          echo "PATH=/usr/local/bin:/usr/local/sbin:/usr/bin:/usr/sbin:/bin:/sbin" >> $GITHUB_ENV
 
       - name: 配置内核
         run: |
