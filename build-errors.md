@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 16:20 - Run 22660988670
+
+**错误**: `unknown type name 'compat_uptr_t'`
+
+**原因**: Clang 编译 ARM64 内核时缺少 compat 类型定义
+
+**修复**: 添加 `LLVM_IAS=0` 禁用内联汇编，使用传统汇编模式
+
+---
+
 ## 2026-03-04 16:17 - Run 22660882476
 
 **错误**: `compiler 'aarch64-linux-gnu-gcc' not found`

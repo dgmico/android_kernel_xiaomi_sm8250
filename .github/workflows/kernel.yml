@@ -24,6 +24,7 @@ jobs:
         run: |
           echo "ARCH=arm64" >> $GITHUB_ENV
           echo "CC=clang" >> $GITHUB_ENV
+          echo "LLVM_IAS=0" >> $GITHUB_ENV
           echo "CROSS_COMPILE=aarch64-linux-gnu-" >> $GITHUB_ENV
           echo "CROSS_COMPILE_ARM32=arm-linux-gnueabihf-" >> $GITHUB_ENV
 
