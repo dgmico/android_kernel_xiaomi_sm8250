@@ -81,4 +81,20 @@ void rcu_barrier_tasks_trace(void);
 
 #endif /* #ifdef CONFIG_TASKS_TRACE_RCU */
 
+#ifndef CONFIG_TASKS_TRACE_RCU
+/* Stub functions when TASKS_TRACE_RCU is not enabled */
+static inline void rcu_read_lock_trace(void)
+{
+}
+
+static inline void rcu_read_unlock_trace(void)
+{
+}
+
+static inline int rcu_read_lock_trace_held(void)
+{
+	return 1;
+}
+#endif
+
 #endif /* __LINUX_RCUPDATE_TRACE_H */
