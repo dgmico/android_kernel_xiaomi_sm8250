@@ -90,6 +90,12 @@ static inline void rcu_read_lock_trace(void)
 static inline void rcu_read_unlock_trace(void)
 {
 }
+
+/* Stub for call_rcu_tasks_trace - maps to regular call_rcu */
+static inline void call_rcu_tasks_trace(struct rcu_head *rhp, rcu_callback_t func)
+{
+	call_rcu(rhp, func);
+}
 #endif
 
 #endif /* __LINUX_RCUPDATE_TRACE_H */
