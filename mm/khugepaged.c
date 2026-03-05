@@ -1305,8 +1305,10 @@ static void retract_page_tables(struct address_space *mapping, pgoff_t pgoff)
 		if (mmap_write_trylock(mm)) {
 			if (!khugepaged_test_exit(mm)) {
 				spinlock_t *ptl;
+			struct mmu_notifier_range range;
 				unsigned long end = addr + HPAGE_PMD_SIZE;
 
+			mmu_notifier_range_init(&range, MMU_NOTIFY_UNMAP, 0, vma, mm, addr, end);
 				/*
 				 * Re-check whether we have an ->anon_vma, because
 				 * collapse_and_free_pmd() requires that either no
@@ -1319,8 +1321,7 @@ static void retract_page_tables(struct address_space *mapping, pgoff_t pgoff)
 					up_write(&mm->mmap_sem);
 					continue;
 				}
-				mmu_notifier_invalidate_range_start(mm, addr,
-								    end);
+				mmu_notifier_invalidate_range_start(&range);
 				ptl = pmd_lock(mm, pmd);
 				/* assume page table is clear */
 				_pmd = pmdp_collapse_flush(vma, addr, pmd);
@@ -1328,8 +1329,7 @@ static void retract_page_tables(struct address_space *mapping, pgoff_t pgoff)
 				mm_dec_nr_ptes(mm);
 				tlb_remove_table_sync_one();
 				pte_free(mm, pmd_pgtable(_pmd));
-				mmu_notifier_invalidate_range_end(mm, addr,
-								  end);
+				mmu_notifier_invalidate_range_end(&range);
 			}
 			mmap_write_unlock(mm);
 		}
