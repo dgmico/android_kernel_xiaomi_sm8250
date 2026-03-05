@@ -232,3 +232,21 @@
 **修改文件**:
 - `drivers/kernelsu/ksu.c`
 
+
+---
+
+## 2026-03-05 17:35 - Run 22710415798
+
+**错误**: `drivers/kernelsu/allowlist.c:448:32: error: ‘TWA_RESUME’ undeclared` and `drivers/kernelsu/allowlist.c:454:5: error: implicit declaration of function ‘put_task_struct’`
+
+**原因**: 
+1. `TWA_RESUME` 是在 Linux 5.9 引入的，而 4.19 内核中 `task_work_add` 使用 `bool` 类型的 `notify` 参数。
+2. `allowlist.c` 缺少 `<linux/sched/task.h>` 头文件，导致 `put_task_struct` 未声明。
+
+**修复**: 
+1. 在 `drivers/kernelsu/ksu.h` 中添加 `TWA_RESUME` 的兼容性宏定义。
+2. 在 `drivers/kernelsu/allowlist.c` 中添加缺失的 `<linux/sched/task.h>` 和 `<linux/sched.h>`。
+
+**修改文件**:
+- `drivers/kernelsu/ksu.h` - 添加 `TWA_RESUME` 宏定义。
+- `drivers/kernelsu/allowlist.c` - 添加缺失的头文件。

@@ -7,6 +7,10 @@
 
 #define KERNEL_SU_VERSION KSU_VERSION
 
+#ifndef TWA_RESUME
+#define TWA_RESUME true
+#endif
+
 #define EVENT_POST_FS_DATA 1
 #define EVENT_BOOT_COMPLETED 2
 #define EVENT_MODULE_MOUNTED 3
