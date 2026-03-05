@@ -204,3 +204,17 @@
 - `drivers/clk/qcom/Makefile` - 添加 `CFLAGS_clk-debug.o := -I$(src)`
 - `drivers/clk/qcom/trace.h` - 修正 `_TRACE_CLOCK_QCOM` 为 `_TRACE_CLOCK_QCOM_H`
 
+
+---
+
+## 2026-03-05 16:52 - Run 22709608857
+
+**错误**: `drivers/clk/qcom/common.h:49:16: error: field ‘hw’ has incomplete type`
+
+**原因**: `struct clk_dummy` 在 `common.h` 中直接嵌入了 `struct clk_hw` 结构体，但该头文件仅对 `struct clk_hw` 进行了前向声明，未包含其完整定义（通常在 `<linux/clk-provider.h>` 中）。
+
+**修复**: 在 `drivers/clk/qcom/common.h` 中增加 `#include <linux/clk-provider.h>` 并移除冗余的前向声明。
+
+**修改文件**:
+- `drivers/clk/qcom/common.h` - 添加头文件包含并优化声明。
+
