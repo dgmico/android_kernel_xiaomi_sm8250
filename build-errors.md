@@ -124,3 +124,16 @@
 **修改文件**:
 - `virt/kvm/kvm_main.c` - 修复 kvm_unmap_hva_range 和 follow_pte_pmd 调用
 - `arch/arm64/include/asm/proc-fns.h` - 删除冲突的 cpu_soft_restart 声明
+
+---
+
+## 2026-03-05 07:10 - Run 22706184322
+
+**错误**: `kernel/bpf/trampoline.c: error: implicit declaration of function 'call_rcu_tasks_trace'`
+
+**原因**: 配置文件使用了错误的配置名 `CONFIG_TASKS_RCU_TRACE`，正确的应该是 `CONFIG_TASKS_TRACE_RCU`
+
+**修复**: 将 `CONFIG_TASKS_RCU_TRACE=y` 改为 `CONFIG_TASKS_TRACE_RCU=y`
+
+**修改文件**:
+- `arch/arm64/configs/vendor/xiaomi/sm8250-common.config` - 修正配置名
