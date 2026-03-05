@@ -134,3 +134,16 @@ all.config
 
 # fetched Android config fragments
 kernel/configs/android-*.cfg
+
+# GitHub Actions (allow workflows)
+.github/
+!.github/workflows/
+
+# Kernel build output
+out/
+/Image
+/Image.gz
+/Image.gz-dtb
+/System.map
+/vmlinux
+/vmlinuz
