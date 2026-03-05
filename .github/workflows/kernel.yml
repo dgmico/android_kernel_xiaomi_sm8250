@@ -75,7 +75,10 @@ jobs:
           # 避免 struct rcu_tasks 不完整错误
           echo "CONFIG_PREEMPT=y" >> .config
           echo "CONFIG_TASKS_RCU=y" >> .config
-          grep -E "CONFIG_COMPAT|CONFIG_PREEMPT|CONFIG_TASKS_RCU" .config
+          # 启用 CONFIG_TASKS_TRACE_RCU 解决 trc_reader_need_end 成员未定义错误
+          # RCU tasks trace 需要此选项来定义 struct task_struct 中的 trc_reader_need_end
+          echo "CONFIG_TASKS_TRACE_RCU=y" >> .config
+          grep -E "CONFIG_COMPAT|CONFIG_PREEMPT|CONFIG_TASKS_RCU|CONFIG_TASKS_TRACE_RCU" .config
 
       - name: 编译内核
         run: make -j$(nproc) Image.gz-dtb

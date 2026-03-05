@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-05 01:00 - Run 22697098618
+
+**错误**: `no member named 'trc_reader_need_end' in 'struct task_struct'`
+
+**原因**: 启用 CONFIG_TASKS_RCU 后，rcu_read_unlock_trace_special 函数被编译，但 struct task_struct 中没有定义 trc_reader_need_end 成员，因为 CONFIG_TASKS_TRACE_RCU 未启用
+
+**修复**: 在配置步骤中添加 `CONFIG_TASKS_TRACE_RCU=y` 到 .config
+
+---
+
 ## 2026-03-04 18:15 - Run 22664748130
 
 **错误**: `incomplete definition of type 'struct rcu_tasks'`
