@@ -75,3 +75,16 @@
 
 **修改文件**:
 - `arch/arm64/configs/vendor/xiaomi/sm8250-common.config` - 添加 CONFIG_TASKS_RCU=y 和 CONFIG_TASKS_RCU_TRACE=y
+
+---
+
+## 2026-03-05 06:45 - Run 22705751856
+
+**错误**: `kernel/rcu/tasks.h:437:28: error: dereferencing pointer to incomplete type 'struct rcu_tasks'` (重复错误)
+
+**原因**: 虽然已在 sm8250-common.config 中添加 CONFIG_TASKS_RCU=y，但配置合并可能没有正确工作。`make vendor/xxx.config` 需要先有基础 .config 文件才能正确合并片段。
+
+**修复**: 在工作流中先运行 `make defconfig` 创建基础配置，再运行 `make vendor/xxx.config` 合并片段。
+
+**修改文件**:
+- `.github/workflows/build-kernel.yml` - 添加 make defconfig 步骤

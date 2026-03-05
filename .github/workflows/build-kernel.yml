@@ -44,6 +44,7 @@ jobs:
 
       - name: 配置内核
         run: |
+          make defconfig
           make vendor/xiaomi/sm8250-common.config vendor/xiaomi/apollo.config
 
       - name: 编译内核
