@@ -101,3 +101,26 @@
 
 **修改文件**:
 - `include/linux/mmu_notifier.h` - 添加 enum mmu_notifier_event 定义
+
+---
+
+## 2026-03-05 07:00 - Run 22706008608
+
+**错误**:
+- `virt/kvm/kvm_main.c:413: error: too few arguments to function 'kvm_unmap_hva_range'`
+- `virt/kvm/kvm_main.c:1517,1532: error: too many arguments to function 'follow_pte_pmd'`
+- `arch/arm64/kernel/cpu-reset.h:19: error: conflicting types for 'cpu_soft_restart'`
+
+**原因**:
+1. `kvm_unmap_hva_range` 需要 4 个参数，但只传了 3 个，缺少 `blockable` 参数
+2. `follow_pte_pmd` API 变化：旧版 7 参数调用需要改为 6 参数
+3. `cpu_soft_restart` 在 `proc-fns.h` 和 `cpu-reset.h` 中有冲突的声明
+
+**修复**:
+1. 添加 `true` 作为 `blockable` 参数
+2. 修正 `follow_pte_pmd` 调用参数从 7 个改为 6 个
+3. 删除 `proc-fns.h` 中的旧版 `cpu_soft_restart` 声明
+
+**修改文件**:
+- `virt/kvm/kvm_main.c` - 修复 kvm_unmap_hva_range 和 follow_pte_pmd 调用
+- `arch/arm64/include/asm/proc-fns.h` - 删除冲突的 cpu_soft_restart 声明
