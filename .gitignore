@@ -137,6 +137,9 @@ kernel/configs/android-*.cfg
 
 # GitHub Actions (allow workflows)
 .github/
+
+# KernelSU
+kernel/KSU/
 !.github/workflows/
 
 # Kernel build output

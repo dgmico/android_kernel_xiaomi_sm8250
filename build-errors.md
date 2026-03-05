@@ -163,3 +163,16 @@
 
 **修改文件**:
 - `kernel/bpf/trampoline.c` - 添加条件编译
+
+---
+
+## 2026-03-05 - KernelSU 集成
+
+**修改**: 集成 KernelSU 到内核源码
+
+**修改文件**:
+- `kernel/KSU/` - 添加 KernelSU 内核代码
+- `drivers/kernelsu` - 创建符号链接
+- `drivers/Makefile` - 添加 kernelsu 引用
+- `drivers/Kconfig` - 添加 kernelsu Kconfig source
+- `arch/arm64/configs/vendor/xiaomi/sm8250-common.config` - 添加 CONFIG_KPROBES, CONFIG_HAVE_KPROBES, CONFIG_KPROBE_EVENTS, CONFIG_KSU
