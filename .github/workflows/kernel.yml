@@ -78,7 +78,10 @@ jobs:
           # 启用 CONFIG_TASKS_TRACE_RCU 解决 trc_reader_need_end 成员未定义错误
           # RCU tasks trace 需要此选项来定义 struct task_struct 中的 trc_reader_need_end
           echo "CONFIG_TASKS_TRACE_RCU=y" >> .config
-          grep -E "CONFIG_COMPAT|CONFIG_PREEMPT|CONFIG_TASKS_RCU|CONFIG_TASKS_TRACE_RCU" .config
+          # 启用 CONFIG_NO_HZ_COMMON 解决 nohz_flags/NOHZ_KICK_MASK 未定义错误
+          # sched_unisolate_cpu_unlocked 函数需要这些定义
+          echo "CONFIG_NO_HZ_COMMON=y" >> .config
+          grep -E "CONFIG_COMPAT|CONFIG_PREEMPT|CONFIG_TASKS_RCU|CONFIG_TASKS_TRACE_RCU|CONFIG_NO_HZ_COMMON" .config
 
       - name: 编译内核
         run: make -j$(nproc) Image.gz-dtb

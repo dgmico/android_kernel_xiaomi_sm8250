@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-05 01:15 - Run 22697407559
+
+**错误**: `implicit declaration of function 'nohz_flags'`, `use of undeclared identifier 'NOHZ_KICK_MASK'`
+
+**原因**: sched_unisolate_cpu_unlocked 函数使用了 nohz_flags 和 NOHZ_KICK_MASK，但这些只在 CONFIG_NO_HZ_COMMON 条件下定义。当前配置未启用 CONFIG_NO_HZ_COMMON
+
+**修复**: 在配置步骤中添加 CONFIG_NO_HZ_COMMON=y
+
+---
+
 ## 2026-03-05 01:10 - Run 22697258100
 
 **错误**: `no member named 'trc_reader_need_end' in 'struct task_struct'`
