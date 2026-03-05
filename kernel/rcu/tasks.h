@@ -563,6 +563,7 @@ void call_rcu_tasks_trace(struct rcu_head *rhp, rcu_callback_t func)
 EXPORT_SYMBOL_GPL(call_rcu_tasks_trace);
 
 /* If we are the last reader, wake up the grace-period kthread. */
+#ifdef CONFIG_TASKS_TRACE_RCU
 void rcu_read_unlock_trace_special(struct task_struct *t)
 {
 	WRITE_ONCE(t->trc_reader_need_end, false);
@@ -570,3 +571,4 @@ void rcu_read_unlock_trace_special(struct task_struct *t)
 		wake_up(&trc_wait);
 }
 EXPORT_SYMBOL_GPL(rcu_read_unlock_trace_special);
+#endif /* #ifdef CONFIG_TASKS_TRACE_RCU */

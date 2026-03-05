@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-05 01:10 - Run 22697258100
+
+**错误**: `no member named 'trc_reader_need_end' in 'struct task_struct'`
+
+**原因**: 内核代码 bug - tasks.h 中的 rcu_read_unlock_trace_special 函数定义没有条件编译保护，但 struct task_struct 中的 trc_reader_need_end 成员只在 CONFIG_TASKS_TRACE_RCU 条件下定义。启用 CONFIG_TASKS_RCU 后函数被编译，但成员未定义
+
+**修复**: 在 kernel/rcu/tasks.h 中添加 #ifdef CONFIG_TASKS_TRACE_RCU 保护函数定义
+
+---
+
 ## 2026-03-05 01:00 - Run 22697098618
 
 **错误**: `no member named 'trc_reader_need_end' in 'struct task_struct'`
