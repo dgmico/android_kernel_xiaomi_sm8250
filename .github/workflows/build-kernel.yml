@@ -1,4 +1,4 @@
-name: Build Kernel
+name: 内核编译
 
 on:
   push:
@@ -11,10 +11,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
+      - name: 检出代码
         uses: actions/checkout@v4
 
-      - name: Install dependencies
+      - name: 安装编译依赖
         run: |
           sudo apt-get update
           sudo apt-get install -y git gnupg flex bison gperf build-essential \
@@ -22,19 +22,19 @@ jobs:
             x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils \
             xsltproc unzip bc gcc-aarch64-linux-gnu clang
 
-      - name: Download GCC Toolchain (LineageOS 23.2)
+      - name: 下载 GCC 工具链
         run: |
           git clone --depth=1 -b lineage-23.2 \
             https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3.git \
             ~/toolchain/gcc
 
-      - name: Download Android NDK (Clang)
+      - name: 下载 Android NDK (Clang)
         run: |
           wget -q https://dl.google.com/android/repository/android-ndk-r26b-linux.zip -O ndk.zip
           unzip -q ndk.zip -D ~
           echo "$HOME/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
-      - name: Setup environment
+      - name: 设置编译环境
         run: |
           echo "ARCH=arm64" >> $GITHUB_ENV
           echo "SUBARCH=arm64" >> $GITHUB_ENV
@@ -42,22 +42,22 @@ jobs:
           echo "CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV
           echo "CC=clang" >> $GITHUB_ENV
 
-      - name: Configure kernel
+      - name: 配置内核
         run: |
           make vendor/xiaomi/sm8250-common.config vendor/xiaomi/apollo.config
 
-      - name: Build kernel
+      - name: 编译内核
         run: |
           make Image.gz-dtb -j$(nproc)
 
-      - name: Upload artifact
+      - name: 上传编译产物
         uses: actions/upload-artifact@v4
         with:
           name: kernel-image
           path: arch/arm64/boot/Image.gz-dtb
           retention-days: 7
 
-      - name: Send Telegram notification on success
+      - name: 发送 Telegram 成功通知
         if: success()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -68,7 +68,7 @@ jobs:
             -d "text=✅ Build Success!%0A%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Workflow:* [${{ github.workflow }}](${{ github.run_url }})" \
             -d "parse_mode=Markdown"
 
-      - name: Send Telegram notification on failure
+      - name: 发送 Telegram 失败通知
         if: failure()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
