@@ -176,3 +176,16 @@
 - `drivers/Makefile` - 添加 kernelsu 引用
 - `drivers/Kconfig` - 添加 kernelsu Kconfig source
 - `arch/arm64/configs/vendor/xiaomi/sm8250-common.config` - 添加 CONFIG_KPROBES, CONFIG_HAVE_KPROBES, CONFIG_KPROBE_EVENTS, CONFIG_KSU
+
+---
+
+## 2026-03-05 - Run 22707470682
+
+**错误**: `kernel/bpf/trampoline.c: error: implicit declaration of function 'call_rcu_tasks_trace'`
+
+**原因**: 多次尝试修复 TASKS_TRACE_RCU 配置问题仍未解决，暂时禁用 CONFIG_TASKS_TRACE_RCU
+
+**修复**: 禁用 CONFIG_TASKS_TRACE_RCU，使用条件编译处理
+
+**修改文件**:
+- `arch/arm64/configs/vendor/xiaomi/sm8250-common.config` - 禁用 CONFIG_TASKS_TRACE_RCU
