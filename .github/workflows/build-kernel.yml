@@ -31,7 +31,7 @@ jobs:
       - name: 下载 Android NDK (Clang)
         run: |
           wget -q https://dl.google.com/android/repository/android-ndk-r26b-linux.zip -O ndk.zip
-          unzip -q ndk.zip -D ~
+          unzip -q ndk.zip -d $HOME
           echo "$HOME/android-ndk-r26b/toolchains/llvm/prebuilt/linux-x86_64/bin" >> $GITHUB_PATH
 
       - name: 设置编译环境
