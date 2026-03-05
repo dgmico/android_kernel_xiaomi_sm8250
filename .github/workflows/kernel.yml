@@ -71,9 +71,11 @@ jobs:
           # 启用 CONFIG_COMPAT 解决 compat_uptr_t 类型未定义错误
           # filter.h 中的 struct compat_sock_fprog 需要 compat_uptr_t 类型
           sed -i 's/# CONFIG_COMPAT is not set/CONFIG_COMPAT=y/' .config
-          # 启用 CONFIG_TASKS_RCU 避免 struct rcu_tasks 不完整错误
-          sed -i 's/# CONFIG_TASKS_RCU is not set/CONFIG_TASKS_RCU=y/' .config
-          grep -E "CONFIG_COMPAT|CONFIG_TASKS_RCU" .config
+          # 启用 CONFIG_PREEMPT 以启用 TASKS_RCU (TASKS_RCU def_bool PREEMPT)
+          # 避免 struct rcu_tasks 不完整错误
+          echo "CONFIG_PREEMPT=y" >> .config
+          echo "CONFIG_TASKS_RCU=y" >> .config
+          grep -E "CONFIG_COMPAT|CONFIG_PREEMPT|CONFIG_TASKS_RCU" .config
 
       - name: 编译内核
         run: make -j$(nproc) Image.gz-dtb

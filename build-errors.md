@@ -1,5 +1,15 @@
 # Build Errors History
 
+## 2026-03-04 18:15 - Run 22664748130
+
+**错误**: `incomplete definition of type 'struct rcu_tasks'`
+
+**原因**: TASKS_RCU 使用 `def_bool PREEMPT`，依赖 CONFIG_PREEMPT。配置文件中没有 PREEMPT，导致 TASKS_RCU 未启用。之前 sed 命令无效（配置项不存在）
+
+**修复**: 在配置步骤中显式添加 `CONFIG_PREEMPT=y` 和 `CONFIG_TASKS_RCU=y` 到 .config 末尾
+
+---
+
 ## 2026-03-04 18:10 - Run 22664578326
 
 **错误**: `unknown type name 'compat_uptr_t'`
