@@ -9,6 +9,15 @@
 #include <linux/srcu.h>
 #include <linux/android_kabi.h>
 
+/* mmu_notifier_event enum - used by mmu_notifier_range_init */
+enum mmu_notifier_event {
+	MMU_NOTIFY_UNMAP = 0,
+	MMU_NOTIFY_CLEAR,
+	MMU_NOTIFY_PROTECTION_VMA,
+	MMU_NOTIFY_PROTECTION_PAGE,
+	MMU_NOTIFY_SOFT_DIRTY,
+};
+
 struct mmu_notifier;
 struct mmu_notifier_ops;
 

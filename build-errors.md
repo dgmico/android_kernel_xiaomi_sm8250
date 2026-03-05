@@ -88,3 +88,16 @@
 
 **修改文件**:
 - `.github/workflows/build-kernel.yml` - 添加 make defconfig 步骤
+
+---
+
+## 2026-03-05 06:48 - Run 22705910623
+
+**错误**: `./include/linux/mmu_notifier.h:346:33: error: parameter 2 ('event') has incomplete type`
+
+**原因**: `enum mmu_notifier_event` 在 `mmu_notifier_range_init` 函数中被使用，但没有定义该枚举类型。
+
+**修复**: 在 mmu_notifier.h 中添加 `enum mmu_notifier_event` 的定义，包含 MMU_NOTIFY_UNMAP, MMU_NOTIFY_CLEAR 等枚举值。
+
+**修改文件**:
+- `include/linux/mmu_notifier.h` - 添加 enum mmu_notifier_event 定义
