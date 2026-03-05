@@ -246,7 +246,10 @@ static void bpf_tramp_image_put(struct bpf_tramp_image *im)
 	 * Then use call_rcu_tasks() to wait for the rest of trampoline asm
 	 * and normal progs.
 	 */
-	call_rcu_tasks_trace(&im->rcu, __bpf_tramp_image_put_rcu_tasks);
+	if (IS_ENABLED(CONFIG_TASKS_TRACE_RCU))
+		call_rcu_tasks_trace(&im->rcu, __bpf_tramp_image_put_rcu_tasks);
+	else
+		call_rcu_tasks(&im->rcu, __bpf_tramp_image_put_rcu);
 }
 
 static struct bpf_tramp_image *bpf_tramp_image_alloc(u64 key, u32 idx)
@@ -529,13 +532,15 @@ void notrace __bpf_prog_exit(struct bpf_prog *prog, u64 start)
 
 void notrace __bpf_prog_enter_sleepable(void)
 {
-	rcu_read_lock_trace();
+	if (IS_ENABLED(CONFIG_TASKS_TRACE_RCU))
+		rcu_read_lock_trace();
 	might_fault();
 }
 
 void notrace __bpf_prog_exit_sleepable(void)
 {
-	rcu_read_unlock_trace();
+	if (IS_ENABLED(CONFIG_TASKS_TRACE_RCU))
+		rcu_read_unlock_trace();
 }
 
 void notrace __bpf_tramp_enter(struct bpf_tramp_image *tr)

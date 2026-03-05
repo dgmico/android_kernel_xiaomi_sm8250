@@ -150,3 +150,16 @@
 
 **修改文件**:
 - `kernel/rcu/tasks.h` - 添加条件编译保护
+
+---
+
+## 2026-03-05 07:20 - Run 22706746252
+
+**错误**: `kernel/bpf/trampoline.c: error: implicit declaration of function 'call_rcu_tasks_trace'`
+
+**原因**: `trampoline.c` 中调用 `call_rcu_tasks_trace`、`rcu_read_lock_trace`、`rcu_read_unlock_trace` 的代码没有被 `CONFIG_TASKS_TRACE_RCU` 条件编译保护
+
+**修复**: 在 trampoline.c 中为这些调用添加 `IS_ENABLED(CONFIG_TASKS_TRACE_RCU)` 条件判断
+
+**修改文件**:
+- `kernel/bpf/trampoline.c` - 添加条件编译
