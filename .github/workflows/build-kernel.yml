@@ -27,7 +27,6 @@ jobs:
           git clone --depth=1 -b lineage-23.2 \
             https://github.com/LineageOS/android_prebuilts_gcc_linux-x86_aarch64_aarch64-linux-gnu-9.3.git \
             ~/toolchain/gcc
-          ls -la ~/toolchain/gcc/bin/ | head -20
 
       - name: 下载 Android NDK (Clang)
         run: |
@@ -39,7 +38,7 @@ jobs:
         run: |
           echo "ARCH=arm64" >> $GITHUB_ENV
           echo "SUBARCH=arm64" >> $GITHUB_ENV
-          echo "CROSS_COMPILE=$HOME/toolchain/gcc/bin/aarch64-linux-gnu-" >> $GITHUB_ENV
+          echo "CROSS_COMPILE=$HOME/toolchain/gcc/bin/aarch64-buildroot-linux-gnu-" >> $GITHUB_ENV
           echo "CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV
           echo "CC=clang" >> $GITHUB_ENV
 

@@ -36,3 +36,16 @@
 
 **修改文件**:
 - `.github/workflows/build-kernel.yml` - CROSS_COMPILE 路径使用 $HOME 代替 ~
+
+---
+
+## 2026-03-05 03:30 - Run 22700919139
+
+**错误**: `compiler '/home/runner/toolchain/gcc/bin/aarch64-linux-gnu-gcc' not found`
+
+**原因**: LineageOS GCC 工具链实际前缀是 `aarch64-buildroot-linux-gnu-`，不是 `aarch64-linux-gnu-`
+
+**修复**: 将 CROSS_COMPILE 改为 `aarch64-buildroot-linux-gnu-`
+
+**修改文件**:
+- `.github/workflows/build-kernel.yml` - CROSS_COMPILE 使用正确的前缀 aarch64-buildroot-linux-gnu-
