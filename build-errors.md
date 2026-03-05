@@ -218,3 +218,17 @@
 **修改文件**:
 - `drivers/clk/qcom/common.h` - 添加头文件包含并优化声明。
 
+
+---
+
+## 2026-03-05 17:04 - Run 22709974659
+
+**错误**: `drivers/kernelsu/ksu.c:89:1: error: type defaults to ‘int’ in declaration of ‘MODULE_IMPORT_NS’`
+
+**原因**: `MODULE_IMPORT_NS` 是在 Linux 5.4 引入的宏，用于模块命名空间导入。当前内核版本为 4.19，不支持该宏。
+
+**修复**: 在 `drivers/kernelsu/ksu.c` 中包含 `<linux/version.h>`，并将 `MODULE_IMPORT_NS` 调用包裹在 `#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 4, 0)` 中。
+
+**修改文件**:
+- `drivers/kernelsu/ksu.c`
+
