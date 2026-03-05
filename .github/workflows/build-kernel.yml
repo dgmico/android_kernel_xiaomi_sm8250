@@ -46,6 +46,7 @@ jobs:
         run: |
           make defconfig
           make vendor/xiaomi/sm8250-common.config vendor/xiaomi/apollo.config
+          grep -E "CONFIG_TASKS" .config
 
       - name: 编译内核
         run: |
