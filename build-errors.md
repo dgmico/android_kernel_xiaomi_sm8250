@@ -49,3 +49,16 @@
 
 **修改文件**:
 - `.github/workflows/build-kernel.yml` - CROSS_COMPILE 使用正确的前缀 aarch64-buildroot-linux-gnu-
+
+---
+
+## 2026-03-05 03:37 - Run 22701036451
+
+**错误**: `./include/linux/filter.h:551:2: error: unknown type name 'compat_uptr_t'`
+
+**原因**: `arch/arm64/include/asm/compat.h` 中 `#include <asm-generic/compat.h>` 被放在 `#ifdef CONFIG_COMPAT` 条件块内部，导致某些编译路径下 `compat_uptr_t` 未定义。x86 架构将此 include 放在条件外部。
+
+**修复**: 将 `#include <asm-generic/compat.h>` 移到 `#ifdef CONFIG_COMPAT` 之前，使基本的 compat 类型可以被所有代码访问。
+
+**修改文件**:
+- `arch/arm64/include/asm/compat.h` - 将 asm-generic/compat.h 的包含移到 CONFIG_COMPAT 条件之前
