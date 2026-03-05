@@ -137,3 +137,16 @@
 
 **修改文件**:
 - `arch/arm64/configs/vendor/xiaomi/sm8250-common.config` - 修正配置名
+
+---
+
+## 2026-03-05 07:15 - Run 22706395117
+
+**错误**: `kernel/bpf/trampoline.c: error: implicit declaration of function 'call_rcu_tasks_trace'`
+
+**原因**: `kernel/rcu/tasks.h` 中 `call_rcu_tasks_trace` 等函数定义没有被 `#ifdef CONFIG_TASKS_TRACE_RCU` 条件编译保护，导致在某些编译路径下这些函数不可见
+
+**修复**: 在 tasks.h 中为 `call_rcu_tasks_trace` 和 `rcu_read_unlock_trace_special` 函数添加 `#ifdef CONFIG_TASKS_TRACE_RCU` 条件编译
+
+**修改文件**:
+- `kernel/rcu/tasks.h` - 添加条件编译保护

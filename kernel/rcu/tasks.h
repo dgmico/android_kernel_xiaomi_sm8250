@@ -534,6 +534,7 @@ static void rcu_tasks_wait_gp(struct rcu_tasks *rtp)
 
 
 
+#ifdef CONFIG_TASKS_TRACE_RCU
 void call_rcu_tasks_trace(struct rcu_head *rhp, rcu_callback_t func);
 DEFINE_RCU_TASKS(rcu_tasks_trace, rcu_tasks_wait_gp, call_rcu_tasks_trace,
 		 "RCU Tasks Trace");
@@ -570,3 +571,4 @@ void rcu_read_unlock_trace_special(struct task_struct *t)
 		wake_up(&trc_wait);
 }
 EXPORT_SYMBOL_GPL(rcu_read_unlock_trace_special);
+#endif /* #ifdef CONFIG_TASKS_TRACE_RCU */
