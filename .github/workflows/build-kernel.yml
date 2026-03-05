@@ -18,7 +18,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y git gnupg flex bison gperf build-essential \
-            zip curl zlib1g-dev libc6-dev-i386 lib32ncurses5-dev \
+            zip curl zlib1g-dev libc6-dev-i386 libncurses-dev \
             x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils \
             xsltproc unzip bc gcc-aarch64-linux-gnu clang
 
