@@ -60,7 +60,11 @@ void setup_groups(struct root_profile *profile, struct cred *cred)
     put_group_info(group_info);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 9, 0)
+#define seccomp_filter_release(tsk) put_seccomp_filter(tsk)
+#else
 void seccomp_filter_release(struct task_struct *tsk);
+#endif
 
 static void disable_seccomp(void)
 {
@@ -87,7 +91,9 @@ static void disable_seccomp(void)
 
     current->seccomp.mode = 0;
     current->seccomp.filter = NULL;
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
     atomic_set(&current->seccomp.filter_count, 0);
+#endif
     spin_unlock_irq(&current->sighand->siglock);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)

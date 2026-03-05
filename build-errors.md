@@ -114,11 +114,11 @@
 **原因**:
 1. `kvm_unmap_hva_range` 需要 4 个参数，但只传了 3 个，缺少 `blockable` 参数
 2. `follow_pte_pmd` API 变化：旧版 7 参数调用需要改为 6 参数
-3. `cpu_soft_restart` 在 `proc-fns.h` 和 `cpu-reset.h` 中有冲突的声明
+3. `cpu_soft_restart` 在 `proc-fns.h` 和 `cpu-reset.h` 中 highlighting冲突的声明
 
 **修复**:
 1. 添加 `true` 作为 `blockable` 参数
-2. 修正 `follow_pte_pmd` 调用参数从 7 个改为 6 个
+2. 修正 `follow_pte_pmd` 调用参数 from 7 个改为 6 个
 3. 删除 `proc-fns.h` 中的旧版 `cpu_soft_restart` 声明
 
 **修改文件**:
@@ -250,3 +250,18 @@
 **修改文件**:
 - `drivers/kernelsu/ksu.h` - 添加 `TWA_RESUME` 宏定义。
 - `drivers/kernelsu/allowlist.c` - 添加缺失的头文件。
+
+---
+
+## 2026-03-05 17:45 - Run 22711588458
+
+**错误**: `drivers/kernelsu/app_profile.c:90:33: error: ‘struct seccomp’ has no member named ‘filter_count’`
+
+**原因**: 4.19 内核中的 `struct seccomp` 只有 `mode` 和 `filter` 成员，没有 `filter_count`。此外，`seccomp_filter_release` 也是在 Linux 5.9 引入的。
+
+**修复**: 
+1. 将 `filter_count` 的重置代码包裹在 `#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)` 中。
+2. 对于旧版内核，定义 `seccomp_filter_release` 宏调用 `put_seccomp_filter`。
+
+**修改文件**:
+- `drivers/kernelsu/app_profile.c` - 添加内核版本检查和兼容性宏
