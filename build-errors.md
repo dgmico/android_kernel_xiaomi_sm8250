@@ -23,3 +23,16 @@
 
 **修改文件**:
 - `.github/workflows/build-kernel.yml` - 修复 unzip 命令
+
+---
+
+## 2026-03-05 03:26 - Run 22700752518
+
+**错误**: `compiler '~/toolchain/gcc/bin/aarch64-linux-gnu-gcc' not found`
+
+**原因**: `CROSS_COMPILE=~/toolchain/gcc/...` 中 `~` 在 GitHub Actions 环境变量中没有被正确展开
+
+**修复**: 将 `~` 改为 `$HOME`
+
+**修改文件**:
+- `.github/workflows/build-kernel.yml` - CROSS_COMPILE 路径使用 $HOME 代替 ~
