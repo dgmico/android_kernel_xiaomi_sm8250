@@ -189,3 +189,18 @@
 
 **修改文件**:
 - `arch/arm64/configs/vendor/xiaomi/sm8250-common.config` - 禁用 CONFIG_TASKS_TRACE_RCU
+
+---
+
+## 2026-03-05 16:42 - Run 22709177957
+
+**错误**: `fatal error: ./trace.h: No such file or directory` in `drivers/clk/qcom/clk-debug.c`
+
+**原因**: Tracepoint 头文件 `drivers/clk/qcom/trace.h` 虽然设置了 `TRACE_INCLUDE_PATH .`，但编译系统在包含 `include/trace/define_trace.h` 时无法在当前搜索路径中找到该文件。
+
+**修复**: 在 `drivers/clk/qcom/Makefile` 中为 `clk-debug.o` 添加 `-I$(src)`。同时修正了 `trace.h` 中的宏定义保护不匹配的问题。
+
+**修改文件**:
+- `drivers/clk/qcom/Makefile` - 添加 `CFLAGS_clk-debug.o := -I$(src)`
+- `drivers/clk/qcom/trace.h` - 修正 `_TRACE_CLOCK_QCOM` 为 `_TRACE_CLOCK_QCOM_H`
+

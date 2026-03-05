@@ -7,7 +7,7 @@
 #define TRACE_SYSTEM clk_qcom
 
 #if !defined(_TRACE_CLOCK_QCOM_H) || defined(TRACE_HEADER_MULTI_READ)
-#define _TRACE_CLOCK_QCOM
+#define _TRACE_CLOCK_QCOM_H
 
 #include <linux/tracepoint.h>
 
@@ -38,7 +38,7 @@ DEFINE_EVENT(clk_measure_support, clk_measure,
 	TP_ARGS(name, rate)
 );
 
-#endif /* _TRACE_CLOCK_QCOM */
+#endif /* _TRACE_CLOCK_QCOM_H */
 
 /* This part must be outside protection */
 
