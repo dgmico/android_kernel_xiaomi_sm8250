@@ -62,3 +62,16 @@
 
 **修改文件**:
 - `arch/arm64/include/asm/compat.h` - 将 asm-generic/compat.h 的包含移到 CONFIG_COMPAT 条件之前
+
+---
+
+## 2026-03-05 03:41 - Run 22701144922
+
+**错误**: `kernel/rcu/tasks.h:437:28: error: dereferencing pointer to incomplete type 'struct rcu_tasks'`
+
+**原因**: `CONFIG_TASKS_RCU` 没有在配置文件中显式启用。虽然 Kconfig 定义 `def_bool PREEMPT` 应该自动启用它，但配置合并过程中可能出现问题。此外，`CONFIG_BPF_SYSCALL` 会 select `CONFIG_TASKS_TRACE_RCU`，导致代码使用 `rcu_tasks_trace` 等需要完整结构体定义的功能。
+
+**修复**: 在 sm8250-common.config 中显式启用 `CONFIG_TASKS_RCU=y` 和 `CONFIG_TASKS_RCU_TRACE=y`
+
+**修改文件**:
+- `arch/arm64/configs/vendor/xiaomi/sm8250-common.config` - 添加 CONFIG_TASKS_RCU=y 和 CONFIG_TASKS_RCU_TRACE=y
