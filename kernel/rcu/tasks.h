@@ -418,10 +418,3 @@ void rcu_read_unlock_trace_special(struct task_struct *t)
 }
 EXPORT_SYMBOL_GPL(rcu_read_unlock_trace_special);
 #endif /* #ifdef CONFIG_TASKS_TRACE_RCU */
-
-#ifndef CONFIG_TASKS_TRACE_RCU
-static inline void call_rcu_tasks_trace(struct rcu_head *rhp, rcu_callback_t func)
-{
-	call_rcu(rhp, func);
-}
-#endif
