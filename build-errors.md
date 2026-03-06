@@ -407,7 +407,7 @@
 
 **错误**: `drivers/kernelsu/file_wrapper.c` 中 `iopoll`, `remap_file_range` 成员缺失及 `REMAP_FILE_DEDUP` 未定义。
 
-**原因**: 4.19 内核的 `struct file_operations` 不包含这些较新内核引入的成员和宏。
+**原因**: 4.19 内核的 `struct file_operations` 不包含 these 较新内核引入的成员和宏。
 
 **修复**: 
 1. 在 `drivers/kernelsu/file_wrapper.c` 中为 `iopoll` 和 `remap_file_range` 的相关逻辑及赋值添加内核版本检查。
@@ -546,3 +546,18 @@
 
 **修改文件**:
 - `drivers/kernelsu/selinux/sepolicy.c`
+
+---
+
+## 2026-03-06 13:30 - Run 22750244147
+
+**错误**: `drivers/kernelsu/selinux/rules.c:19:51: error: 'struct selinux_state' has no member named 'policy'`
+
+**原因**: 4.19 内核中 `struct selinux_state` 结构体不包含 `policy` 成员，而是通过 `ss->policydb` 访问策略数据库。
+
+**修复**: 
+1. 将 `rules.c` 中的 `selinux_state.policy` 替换为 `selinux_state.ss`。
+2. 显式包含 `security.h`。
+
+**修改文件**:
+- `drivers/kernelsu/selinux/rules.c`

@@ -5,6 +5,7 @@
 #include "../klog.h" // IWYU pragma: keep
 #include "selinux.h"
 #include "sepolicy.h"
+#include "security.h"
 #include "ss/services.h"
 #include "linux/lsm_audit.h" // IWYU pragma: keep
 #include "xfrm.h"
@@ -16,8 +17,7 @@
 static struct policydb *get_policydb(void)
 {
     struct policydb *db;
-    struct selinux_policy *policy = selinux_state.policy;
-    db = &policy->policydb;
+    db = &selinux_state.ss->policydb;
     return db;
 }
 
