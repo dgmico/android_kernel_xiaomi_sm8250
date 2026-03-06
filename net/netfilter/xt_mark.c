@@ -12,6 +12,16 @@
 
 #include <linux/module.h>
 #include <linux/skbuff.h>
+#include <linux/types.h>
+
+struct xt_mark_tginfo2 {
+	__u32 mark, mask;
+};
+
+struct xt_mark_mtinfo1 {
+	__u32 mark, mask;
+	__u8 invert;
+};
 
 #include <linux/netfilter/xt_mark.h>
 #include <linux/netfilter/x_tables.h>

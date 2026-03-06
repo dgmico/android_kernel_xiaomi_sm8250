@@ -614,3 +614,23 @@
 **修改文件**:
 - `lib/fault-inject.c`
 - `drivers/media/dvb-core/dmxdev.c`
+
+---
+
+## 2026-03-06 15:45 - Run 22753740632
+
+**错误**:
+1. `techpack/audio/dsp/q6adm.c:883:2: error: 'port_idx' is used uninitialized`
+2. `net/netfilter/xt_mark.c:33:32: error: dereferencing pointer to incomplete type 'const struct xt_mark_tginfo2'`
+
+**原因**:
+1. 在 `port_idx` 被赋值前就已在 `pr_info` 中被调用。
+2. 缺少 UAPI 结构体定义。
+
+**修复**:
+1. 调换代码顺序，确保 `pr_info` 在变量赋值后执行。
+2. 在 `xt_mark.c` 中手动添加 `xt_mark_tginfo2` 和 `xt_mark_mtinfo1` 结构体声明。
+
+**修改文件**:
+- `techpack/audio/dsp/q6adm.c`
+- `net/netfilter/xt_mark.c`
