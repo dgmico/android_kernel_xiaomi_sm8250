@@ -69,7 +69,7 @@
 
 **错误**: `kernel/rcu/tasks.h:437:28: error: dereferencing pointer to incomplete type 'struct rcu_tasks'`
 
-**原因**: `CONFIG_TASKS_RCU` 没有在配置文件中显式启用。虽然 Kconfig 定义 `def_bool PREEMPT` 应该自动启用它，但配置合并过程中可能出现问题。此外，`CONFIG_BPF_SYSCALL` 会 select `CONFIG_TASKS_TRACE_RCU`，导致代码使用 `rcu_tasks_trace` 等需要完整结构体定义的功能。
+**原因**: `CONFIG_TASKS_RCU` 没有在配置文件中显式启用。虽然 Kconfig 定义 `def_bool PREEMPT` 应该自动启用它，但配置合并过程中可能出现问题。此外，`CONFIG_BPF_SYSCALL` 会 select `CONFIG_TASKS_TRACE_RCU`，导致代码使用 `rcu_tasks_trace` 等需要完整 structure/宏定义的功能。
 
 **修复**: 在 sm8250-common.config 中显式启用 `CONFIG_TASKS_RCU=y` 和 `CONFIG_TASKS_RCU_TRACE=y`
 
@@ -114,7 +114,7 @@
 **原因**:
 1. `kvm_unmap_hva_range` 需要 4 个参数，但只传了 3 个，缺少 `blockable` 参数
 2. `follow_pte_pmd` API 变化：旧版 7 参数调用需要改为 6 参数
-3. `cpu_soft_restart` 在 `proc-fns.h` 和 `cpu-reset.h` 中 highlighting冲突的声明
+3. `cpu_soft_restart` 在 `proc-fns.h` 和 `cpu-reset.h` 中 conflicting的声明
 
 **修复**:
 1. 添加 `true` 作为 `blockable` 参数
@@ -123,7 +123,7 @@
 
 **修改文件**:
 - `virt/kvm/kvm_main.c` - 修复 kvm_unmap_hva_range 和 follow_pte_pmd 调用
-- `arch/arm64/include/asm/proc-fns.h` - 删除冲突 of cpu_soft_restart 声明
+- `arch/arm64/include/asm/proc-fns.h` - 删除冲突的 cpu_soft_restart 声明
 
 ---
 
@@ -425,7 +425,7 @@
 
 **原因**: `kernel/rcu/tasks.h` 中的通用辅助函数（如 `call_rcu_tasks_generic`、`rcu_tasks_wait_gp`）及其使用的结构体/宏定义在条件编译保护上存在逻辑漏洞。`struct rcu_tasks` 被限制在 `CONFIG_TASKS_RCU` 中，而通用函数却暴露在外部。由于该内核配置中 `TASKS_RCU` 依赖 `PREEMPT`，在未开启抢占的情况下，`CONFIG_TASKS_RCU` 为 `n`，导致通用函数编译时找不到结构体定义。
 
-**修复**: 重构 `kernel/rcu/tasks.h` 的条件编译结构。将 `struct rcu_tasks` 定义、`RTGS_*` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
+**修复**: 重构 `kernel/rcu/tasks.h` 的条件编译 structure。将 `struct rcu_tasks` 定义、`RTGS_*` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
 
 **修改文件**:
 - `kernel/rcu/tasks.h` - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
@@ -436,7 +436,7 @@
 
 **错误**: `kernel/sched/core.c:6970:24: error: 'NOHZ_KICK_MASK' undeclared`
 
-**原因**: `kernel/sched/core.c` 中的 `sched_unisolate_cpu_unlocked` 函数调用了 `NOHZ_KICK_MASK` 和 `nohz_flags`，但这些符号格在 `kernel/sched/sched.h` 中是被 `CONFIG_NO_HZ_COMMON` 条件编译保护的。当前内核配置未启用 `CONFIG_NO_HZ_COMMON`。
+**原因**: `kernel/sched/core.c` 中的 `sched_unisolate_cpu_unlocked` 函数调用了 `NOHZ_KICK_MASK` 和 `nohz_flags`，但这些符号在 `kernel/sched/sched.h` 中是被 `CONFIG_NO_HZ_COMMON` 条件编译保护的。当前内核配置未启用 `CONFIG_NO_HZ_COMMON`。
 
 **修复**: 在 `kernel/sched/core.c` 中为相关调用添加 `#ifdef CONFIG_NO_HZ_COMMON` 保护。
 
@@ -530,3 +530,19 @@
 - `techpack/camera-xiaomi-cas/drivers/cam_sensor_module/cam_sensor_io/cam_sensor_i2c.h`
 - `drivers/hid/hid-trace.h`
 - `drivers/hid/Makefile`
+
+---
+
+## 2026-03-06 13:08 - Run 22749823822
+
+**错误**: `drivers/kernelsu/selinux/sepolicy.c:4:10: fatal error: policydb.h: No such file or directory`
+
+**原因**: `policydb.h` 和 `services.h` 位于 `security/selinux/ss/` 目录下，但 KernelSU 的包含路径仅包含 `security/selinux`。`sepolicy.c` 尝试直接包含 `"policydb.h"` 而非 `"ss/policydb.h"`。同时，该文件引用了 4.19 内核中不存在的 `xattr.h` 和 `utils.h`。
+
+**修复**: 
+1. 将 `policydb.h` 和 `services.h` 的引用改为带 `ss/` 前缀的形式。
+2. 包含 `sepolicy.h` 以确保接口一致性。
+3. 移除不存在的 `xattr.h` 和 `utils.h` 引用。
+
+**修改文件**:
+- `drivers/kernelsu/selinux/sepolicy.c`

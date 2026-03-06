@@ -1,11 +1,10 @@
 #include <linux/ratelimit.h>
 #include <linux/version.h>
 #include "selinux.h"
-#include "policydb.h"
-#include "services.h"
+#include "sepolicy.h"
+#include "ss/policydb.h"
+#include "ss/services.h"
 #include "objsec.h"
-#include "xattr.h"
-#include "utils.h"
 
 // KernelSU Policy Implementation
 // Stubs for older kernels (like 4.19) where SELinux structures are significantly different.
