@@ -423,7 +423,7 @@
 
 **错误**: `kernel/rcu/tasks.h:437:28: error: dereferencing pointer to incomplete type 'struct rcu_tasks'` 及多个 `RTGS_*` 符号未定义。
 
-**原因**: `kernel/rcu/tasks.h` 中的通用辅助函数（如 `call_rcu_tasks_generic`、`rcu_tasks_wait_gp`）及其使用的结构体/宏定义在条件编译保护上存在逻辑漏洞。`struct rcu_tasks` 被限制在 `CONFIG_TASKS_RCU` 中，而通用函数却暴露在外部。由于该内核配置中 `TASKS_RCU` 依赖 `PREEMPT`，在未开启抢占的情况下，`CONFIG_TASKS_RCU` 为 `n`，导致通用函数编译时找不到结构体定义。
+**原因**: `kernel/rcu/tasks.h` 中的通用辅助函数（如 `call_rcu_tasks_generic`、`rcu_tasks_wait_gp`）及其使用的结构体/宏定义在条件编译保护上存在逻辑漏洞。`struct rcu_tasks` 被限制 in `CONFIG_TASKS_RCU` 中，而通用函数却暴露在外部。由于该内核配置中 `TASKS_RCU` 依赖 `PREEMPT`，在未开启抢占的情况下，`CONFIG_TASKS_RCU` 为 `n`，导致通用函数编译时找不到结构体定义。
 
 **修复**: 重构 `kernel/rcu/tasks.h` 的条件编译 structure。将 `struct rcu_tasks` 定义、`RTGS_*` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
 
@@ -659,3 +659,28 @@
 - `include/uapi/linux/netfilter/xt_mark.h`
 - `include/uapi/linux/netfilter/xt_MARK.h`
 - `net/netfilter/xt_mark.c`
+
+---
+
+## 2026-03-06 16:55 - Run 22755787843
+
+**错误**:
+1. `techpack/audio/dsp/mius/mius_sysfs.c: error: 'length' is used uninitialized`
+2. `net/netfilter/xt_DSCP.c: error: 'XT_DSCP_SHIFT' undeclared` 等
+
+**原因**:
+1. `mius_sysfs.c` 中存在与 `elliptic_sysfs.c` 相同的变量未初始化问题。
+2. UAPI 中更多大小写敏感的头文件对（`xt_dscp.h`/`xt_DSCP.h`、`xt_rateest.h`/`xt_RATEEST.h`、`xt_tcpmss.h`/`xt_TCPMSS.h`）在 macOS 上合并时发生混淆，导致定义缺失。
+
+**修复**:
+1. 初始化 `mius_sysfs.c` 中的 `length = 0`。
+2. 再次使用 `git hash-object` 和 `git update-index` 手动恢复剩余所有哈希重复的 UAPI 头文件内容。
+
+**修改文件**:
+- `techpack/audio/dsp/mius/mius_sysfs.c`
+- `include/uapi/linux/netfilter/xt_dscp.h`
+- `include/uapi/linux/netfilter/xt_DSCP.h`
+- `include/uapi/linux/netfilter/xt_rateest.h`
+- `include/uapi/linux/netfilter/xt_RATEEST.h`
+- `include/uapi/linux/netfilter/xt_tcpmss.h`
+- `include/uapi/linux/netfilter/xt_TCPMSS.h`
