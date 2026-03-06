@@ -56,7 +56,7 @@
 
 **错误**: `./include/linux/filter.h:551:2: error: unknown type name 'compat_uptr_t'`
 
-**原因**: `arch/arm64/include/asm/compat.h` 中 `#include <asm-generic/compat.h>` 被放在 `#ifdef CONFIG_COMPAT` 条件块内部，导致某些编译路径下 `compat_uptr_t` 未定义。x86 架构将此 include 放在条件外部。
+**原因**: `arch/arm64/include/asm/compat.h` 中 `#include <asm-generic/compat.h>` 被放在 `#ifdef CONFIG_COMPAT` 条件块内部，导致某些编译路径下 `compat_uptr_t` 未 definition。x86 架构将此 include 放在条件外部。
 
 **修复**: 将 `#include <asm-generic/compat.h>` 移到 `#ifdef CONFIG_COMPAT` 之前，使基本的 compat 类型可以被所有代码访问。
 
@@ -364,7 +364,7 @@
 **原因**: KernelSU 在编译自带的 SELinux 钩子时，由于 `flask.h` 是动态生成的头文件（通常位于对象树 `objtree` 中），导致包含路径不全而无法找到。
 
 **修复**: 
-1. 在 `drivers/kernelsu/Kbuild` 中增加对对象树中 SELinux 包含路径的支持：`-I$(objtree)/security/selinux` 和 `-I$(objtree)/security/selinux/include`。
+1. 在 `drivers/kernelsu/Kbuild` 中增加对对象 tree 中 SELinux 包含路径的支持：`-I$(objtree)/security/selinux` 和 `-I$(objtree)/security/selinux/include`。
 
 **修改文件**:
 - `drivers/kernelsu/Kbuild` - 增加包含路径
@@ -425,7 +425,20 @@
 
 **原因**: `kernel/rcu/tasks.h` 中的通用辅助函数（如 `call_rcu_tasks_generic`、`rcu_tasks_wait_gp`）及其使用的结构体/宏定义在条件编译保护上存在逻辑漏洞。`struct rcu_tasks` 被限制在 `CONFIG_TASKS_RCU` 中，而通用函数却暴露在外部。由于该内核配置中 `TASKS_RCU` 依赖 `PREEMPT`，在未开启抢占的情况下，`CONFIG_TASKS_RCU` 为 `n`，导致通用函数编译时找不到结构体定义。
 
-**修复**: 重构 `kernel/rcu/tasks.h` 的条件编译结构。将 `struct rcu_tasks` 定义、`RTGS_*\` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
+**修复**: 重构 `kernel/rcu/tasks.h` 的条件编译结构。将 `struct rcu_tasks` 定义、`RTGS_*` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
 
 **修改文件**:
 - `kernel/rcu/tasks.h` - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
+
+---
+
+## 2026-03-06 11:25 - Run 22747602317
+
+**错误**: `kernel/sched/core.c:6970:24: error: 'NOHZ_KICK_MASK' undeclared`
+
+**原因**: `kernel/sched/core.c` 中的 `sched_unisolate_cpu_unlocked` 函数调用了 `NOHZ_KICK_MASK` 和 `nohz_flags`，但这些符号在 `kernel/sched/sched.h` 中是被 `CONFIG_NO_HZ_COMMON` 条件编译保护的。当前内核配置未启用 `CONFIG_NO_HZ_COMMON`。
+
+**修复**: 在 `kernel/sched/core.c` 中为相关调用添加 `#ifdef CONFIG_NO_HZ_COMMON` 保护。
+
+**修改文件**:
+- `kernel/sched/core.c` - 为 NOHZ 相关调用添加条件编译。
