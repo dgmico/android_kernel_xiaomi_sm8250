@@ -244,7 +244,7 @@
 2. `allowlist.c` 缺少 `<linux/sched/task.h>` 头文件，导致 `put_task_struct` 未声明。
 
 **修复**: 
-1. 在 `drivers/kernelsu/ksu.h` 中添加 `TWA_RESUME` 的兼容性宏定义。
+1. 在 `drivers/kernelsu/ksu.h` 中添加 `TWA_RESUME` 的兼容性宏 definition。
 2. 在 `drivers/kernelsu/allowlist.c` 中添加缺失的 `<linux/sched/task.h>` 和 `<linux/sched.h>`。
 
 **修改文件**:
@@ -265,3 +265,19 @@
 
 **修改文件**:
 - `drivers/kernelsu/app_profile.c` - 添加内核版本检查和兼容性宏
+
+---
+
+## 2026-03-05 18:15 - Run 22712646834
+
+**错误**: `drivers/kernelsu/pkg_observer.c:40:6: error: ‘const struct fsnotify_ops’ has no member named ‘handle_inode_event’`
+
+**原因**: `handle_inode_event` 钩子是在 Linux 5.1 引入的。4.19 内核仅支持通用的 `handle_event` 钩子。
+
+**修复**: 
+1. 增加内核版本判断。
+2. 对于 < 5.1.0 的内核，在 `fsnotify_ops` 中使用 `handle_event` 代替 `handle_inode_event`。
+3. 提供适配旧版参数的 `ksu_handle_event` 实现。
+
+**修改文件**:
+- `drivers/kernelsu/pkg_observer.c` - 添加 fsnotify 兼容性处理
