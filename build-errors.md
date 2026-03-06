@@ -378,9 +378,25 @@
 **原因**: 虽然增加了包含路径，但在并行编译过程中，`drivers/kernelsu` 可能在 `security/selinux` 尚未生成头文件时就开始编译。由于 KernelSU 作为驱动模块被引入，其依赖关系未能有效约束并行编译顺序。
 
 **修复**: 
-1. 在 `drivers/kernelsu/Kbuild` 中为 `selinux.o` 添加显式的头文件依赖：`$(obj)/selinux/selinux.o: security/selinux/flask.h`。
-2. 在 `.github/workflows/build-kernel.yml` 中增加显式生成 SELinux 头文件的步骤，确保在全局编译开始前头文件已就绪。
+1. 在 `drivers/kernelsu/Kbuild` 中为 `selinux.o` 添加显式的头文件依赖。
+2. 在 `.github/workflows/build-kernel.yml` 中增加显式生成 SELinux 头文件的步骤。
 
 **修改文件**:
 - `drivers/kernelsu/Kbuild` - 添加显式对象依赖。
 - `.github/workflows/build-kernel.yml` - 增加手动头文件生成步骤。
+
+---
+
+## 2026-03-06 10:45 - Run 22746407964
+
+**错误**: `make[2]: *** No rule to make target 'security/selinux/flask.h', needed by 'drivers/kernelsu/selinux/selinux.o'. Stop.`
+
+**原因**: 在 `drivers/kernelsu/Kbuild` 中添加的显式依赖路径 `security/selinux/flask.h` 无法被子目录中的 `make` 解析为有效目标。
+
+**修复**: 
+1. 移除 `drivers/kernelsu/Kbuild` 中无法解析的显式依赖。
+2. 优化 `.github/workflows/build-kernel.yml` 中的头文件生成步骤，直接针对 `security/selinux/flask.h` 目标进行构建。
+
+**修改文件**:
+- `drivers/kernelsu/Kbuild` - 移除显式依赖。
+- `.github/workflows/build-kernel.yml` - 优化手动头文件生成步骤。

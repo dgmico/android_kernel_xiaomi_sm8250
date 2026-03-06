@@ -27,9 +27,6 @@ ccflags-y += -include $(srctree)/include/uapi/asm-generic/errno.h
 
 subdir-ccflags-y := $(ccflags-y)
 
-# Ensure generated headers are available
-$(obj)/selinux/selinux.o: security/selinux/flask.h
-
 obj-$(CONFIG_KSU) += kernelsu.o
 
 MDIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
