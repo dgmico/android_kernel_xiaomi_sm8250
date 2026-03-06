@@ -350,7 +350,7 @@
 **原因**: `SECCOMP_ARCH_NATIVE_NR` 是较新版本内核引入的宏，在 4.19 内核中不存在。
 
 **修复**: 
-1. 在 `drivers/kernelsu/seccomp_cache.c` 中为 `SECCOMP_ARCH_NATIVE_NR` 提供回退定义，默认使用 `NR_syscalls`。
+1. 在 `drivers/kernelsu/seccomp_cache.c` 中为 `SECCOMP_ARCH_NATIVE_NR` 提供回退 definition，默认使用 `NR_syscalls`。
 
 **修改文件**:
 - `drivers/kernelsu/seccomp_cache.c` - 添加兼容性宏定义
@@ -375,7 +375,7 @@
 
 **错误**: `./security/selinux/include/objsec.h:31:10: fatal error: flask.h: No such file or directory` (再次出现)
 
-**原因**: 虽然增加了包含路径，但在并行编译过程中，`drivers/kernelsu` 可能在 `security/selinux` 尚未生成头文件时就开始编译。由于 KernelSU 作为驱动模块被引入，其依赖关系未能有效约束并行编译顺序。
+**原因**: 虽然增加了包含路径，但在并行编译过程中，`drivers/kernelsu` 可能在 `security/selinux` 尚未生成头文件时就开始编译。由于 KernelSU 作为驱动模块 be 引入，其依赖关系未能有效约束并行编译顺序。
 
 **修复**: 
 1. 在 `drivers/kernelsu/Kbuild` 中为 `selinux.o` 添加显式的头文件依赖。
@@ -416,3 +416,16 @@
 
 **修改文件**:
 - `drivers/kernelsu/file_wrapper.c` - 添加兼容性条件编译
+
+---
+
+## 2026-03-06 - Run 22747246443
+
+**错误**: `kernel/rcu/tasks.h:437:28: error: dereferencing pointer to incomplete type 'struct rcu_tasks'` 及多个 `RTGS_*` 符号未定义。
+
+**原因**: `kernel/rcu/tasks.h` 中的通用辅助函数（如 `call_rcu_tasks_generic`、`rcu_tasks_wait_gp`）及其使用的结构体/宏定义在条件编译保护上存在逻辑漏洞。`struct rcu_tasks` 被限制在 `CONFIG_TASKS_RCU` 中，而通用函数却暴露在外部。由于该内核配置中 `TASKS_RCU` 依赖 `PREEMPT`，在未开启抢占的情况下，`CONFIG_TASKS_RCU` 为 `n`，导致通用函数编译时找不到结构体定义。
+
+**修复**: 重构 `kernel/rcu/tasks.h` 的条件编译结构。将 `struct rcu_tasks` 定义、`RTGS_*\` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
+
+**修改文件**:
+- `kernel/rcu/tasks.h` - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
