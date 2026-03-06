@@ -340,3 +340,17 @@
 
 **修改文件**:
 - `.github/workflows/build-kernel.yml` - 调整 `安装编译依赖` 步骤。
+
+---
+
+## 2026-03-06 09:35 - Run 22744667816
+
+**错误**: `drivers/kernelsu/seccomp_cache.c:12:34: error: 'SECCOMP_ARCH_NATIVE_NR' undeclared`
+
+**原因**: `SECCOMP_ARCH_NATIVE_NR` 是较新版本内核引入的宏，在 4.19 内核中不存在。
+
+**修复**: 
+1. 在 `drivers/kernelsu/seccomp_cache.c` 中为 `SECCOMP_ARCH_NATIVE_NR` 提供回退定义，默认使用 `NR_syscalls`。
+
+**修改文件**:
+- `drivers/kernelsu/seccomp_cache.c` - 添加兼容性宏定义
