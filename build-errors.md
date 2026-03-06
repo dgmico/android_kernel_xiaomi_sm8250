@@ -294,7 +294,7 @@
 1. 在 `drivers/kernelsu/setuid_hook.c` 和 `drivers/kernelsu/ksud.c` 中添加 `#include "ksu.h"` 以支持旧版内核。
 
 **修改文件**:
-- `drivers/kernelsu/setuid_hook.c` - 包含 ksu.h
+- `drivers/kernelsu/setuid_hook.c" - 包含 ksu.h
 - `drivers/kernelsu/ksud.c` - 包含 ksu.h
 
 ---
@@ -382,7 +382,7 @@
 2. 在 `.github/workflows/build-kernel.yml` 中增加显式生成 SELinux 头文件的步骤。
 
 **修改文件**:
-- `drivers/kernelsu/Kbuild` - 添加显式对象依赖。
+- `drivers/kernelsu/Kbuild" - 添加显式对象依赖。
 - `.github/workflows/build-kernel.yml` - 增加手动头文件生成步骤。
 
 ---
@@ -398,8 +398,8 @@
 2. 优化 `.github/workflows/build-kernel.yml` 中的头文件生成步骤，通过手动编译 `genheaders` 工具并直接调用来生成 `flask.h`。
 
 **修改文件**:
-- `drivers/kernelsu/Kbuild` - 移除显式依赖。
-- `.github/workflows/build-kernel.yml` - 优化手动头文件生成步骤。
+- `drivers/kernelsu/Kbuild" - 移除显式依赖。
+- `.github/workflows/build-kernel.yml" - 优化手动头文件生成步骤。
 
 ---
 
@@ -428,7 +428,7 @@
 **修复**: 重构 `kernel/rcu/tasks.h` 的条件编译结构。将 `struct rcu_tasks` 定义、`RTGS_*` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
 
 **修改文件**:
-- `kernel/rcu/tasks.h` - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
+- `kernel/rcu/tasks.h" - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
 
 ---
 
@@ -436,12 +436,12 @@
 
 **错误**: `kernel/sched/core.c:6970:24: error: 'NOHZ_KICK_MASK' undeclared`
 
-**原因**: `kernel/sched/core.c` 中的 `sched_unisolate_cpu_unlocked` 函数调用了 `NOHZ_KICK_MASK` 和 `nohz_flags`，但这些符号在 `kernel/sched/sched.h` 中是被 `CONFIG_NO_HZ_COMMON` 条件编译保护的。当前内核配置未启用 `CONFIG_NO_HZ_COMMON`。
+**原因**: `kernel/sched/core.c` 中的 `sched_unisolate_cpu_unlocked` 函数调用了 `NOHZ_KICK_MASK` 和 `nohz_flags`，但这些符号格在 `kernel/sched/sched.h` 中是被 `CONFIG_NO_HZ_COMMON` 条件编译保护的。当前内核配置未启用 `CONFIG_NO_HZ_COMMON`。
 
 **修复**: 在 `kernel/sched/core.c` 中为相关调用添加 `#ifdef CONFIG_NO_HZ_COMMON` 保护。
 
 **修改文件**:
-- `kernel/sched/core.c` - 为 NOHZ 相关调用添加条件编译。
+- `kernel/sched/core.c" - 为 NOHZ 相关调用添加条件编译。
 
 ---
 
@@ -454,4 +454,17 @@
 **修复**: 在 `drivers/input/fingerprint/fpc/fpc1020_tee.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
 
 **修改文件**:
-- `drivers/input/fingerprint/fpc/fpc1020_tee.c` - 添加缺失的头文件。
+- `drivers/input/fingerprint/fpc/fpc1020_tee.c" - 添加缺失的头文件。
+
+---
+
+## 2026-03-06 11:55 - Run 22748052021
+
+**错误**: `drivers/power/supply/maxim/onewire_gpio.c: error: implicit declaration of function 'devm_pinctrl_get'` 等
+
+**原因**: `onewire_gpio.c` 使用了 pinctrl 相关 API，但未包含 `<linux/pinctrl/consumer.h>` 头文件。
+
+**修复**: 在 `drivers/power/supply/maxim/onewire_gpio.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
+
+**修改文件**:
+- `drivers/power/supply/maxim/onewire_gpio.c" - 添加缺失的头文件。
