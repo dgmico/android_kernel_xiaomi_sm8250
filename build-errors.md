@@ -159,7 +159,7 @@
 
 **原因**: `trampoline.c` 中调用 `call_rcu_tasks_trace`、`rcu_read_lock_trace`、`rcu_read_unlock_trace` 的代码没有被 `CONFIG_TASKS_TRACE_RCU` 条件编译保护
 
-**修复**: 在 trampoline.c 中为这些调用添加 `IS_ENABLED(CONFIG_TASKS_TRACE_RCU)` 条件判断
+**修复**: 在 trampoline.c 中为 these 调用添加 `IS_ENABLED(CONFIG_TASKS_TRACE_RCU)` 条件判断
 
 **修改文件**:
 - `kernel/bpf/trampoline.c` - 添加条件编译
@@ -296,3 +296,18 @@
 **修改文件**:
 - `drivers/kernelsu/setuid_hook.c` - 包含 ksu.h
 - `drivers/kernelsu/ksud.c` - 包含 ksu.h
+
+---
+
+## 2026-03-06 01:10 - Run 22743761842
+
+**错误**: `drivers/kernelsu/su_mount_ns.c:16:10: fatal error: uapi/linux/mount.h: No such file or directory`
+
+**原因**: `uapi/linux/mount.h` 是在 Linux 5.1 引入的，4.19 内核并不存在。
+
+**修复**: 
+1. 在 `drivers/kernelsu/su_mount_ns.c` 和 `kernel/KSU/kernel/su_mount_ns.c` 中，将 `#include <uapi/linux/mount.h>` 包裹在内核版本检查（`#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)`）中。
+
+**修改文件**:
+- `drivers/kernelsu/su_mount_ns.c` - 添加内核版本检查
+- `kernel/KSU/kernel/su_mount_ns.c` - 添加内核版本检查
