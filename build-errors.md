@@ -684,3 +684,27 @@
 - `include/uapi/linux/netfilter/xt_RATEEST.h`
 - `include/uapi/linux/netfilter/xt_tcpmss.h`
 - `include/uapi/linux/netfilter/xt_TCPMSS.h`
+
+---
+
+## 2026-03-06 17:15 - Run 22757326537
+
+**错误**:
+1. `./include/trace/define_trace.h:89:42: fatal error: ./pll_trace.h: No such file or directory`
+2. `techpack/camera-xiaomi-cas/drivers/cam_sync/cam_sync.c: error: format string mismatches`
+
+**原因**:
+1. `techpack/display/pll/` 目录下 Tracepoint 包含路径配置缺失，导致编译器找不到同目录下的 `pll_trace.h`。
+2. 相机同步驱动 `cam_sync.c` 中存在多处格式化字符串与变量类型不匹配的问题（如 `atomic_t` 误用 `%d`，`long` 误用 `%d`），在开启 `-Werror` 的环境下导致编译失败。
+
+**修复**:
+1. 在 `techpack/display/pll/Makefile` 中添加 `ccflags-y += -I$(src)`。
+2. 修复 `techpack` 中所有 `cam_sync.c` 变体的格式化字符串错误：将 `atomic_t` 类型包装为 `atomic_read()`，并修正 `%d` 为 `%ld`（对应 `long`）或 `%u`（对应 `uint32_t`）。
+
+**修改文件**:
+- `techpack/display/pll/Makefile`
+- `techpack/camera-xiaomi-tablet/drivers/cam_sync/cam_sync.c`
+- `techpack/camera/drivers/cam_sync/cam_sync.c`
+- `techpack/camera-xiaomi/drivers/cam_sync/cam_sync.c`
+- `techpack/camera-bengal/drivers/cam_sync/cam_sync.c`
+- `techpack/camera-xiaomi-cas/drivers/cam_sync/cam_sync.c`
