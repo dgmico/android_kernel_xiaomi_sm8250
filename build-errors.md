@@ -245,7 +245,7 @@
 
 **修复**: 
 1. 在 `drivers/kernelsu/ksu.h` 中添加 `TWA_RESUME` 的兼容性宏 definition。
-2. 在 `drivers/kernelsu/allowlist.c` 中添加缺失的 `<linux/sched/task.h>` 和 `<linux/sched.h>`。
+2. 在 `drivers/kernelsu/allowlist.c` 中添加缺失 of `<linux/sched/task.h>` 和 `<linux/sched.h>`。
 
 **修改文件**:
 - `drivers/kernelsu/ksu.h` - 添加 `TWA_RESUME` 宏定义。
@@ -371,16 +371,14 @@
 
 ---
 
-## 2026-03-06 09:55 - Run 22745169151
+## 2026-03-06 10:05 - Run 22745524589
 
 **错误**: `./security/selinux/include/objsec.h:31:10: fatal error: flask.h: No such file or directory` (重复)
 
-**原因**: 即使添加了包含路径，由于 `drivers/` 和 `security/` 目录在顶级 Makefile 中是并列的，且没有显式依赖关系，在并行编译时 `drivers/kernelsu` 可能会在 `security/selinux` 生成头文件之前就开始编译。
+**原因**: 并行编译时，`drivers/kernelsu` 可能会在 `security/selinux` 完成头文件生成之前就开始编译，导致竞态条件。
 
 **修复**: 
-1. 将 KernelSU 从 `drivers/Makefile` 中移除。
-2. 将 KernelSU 添加到顶级 `Makefile` 的 `core-y` 列表中，并排在 `security/` 之后，以确保编译顺序正确。
+1. 在顶级 `Makefile` 中显式添加目录级依赖：`drivers/kernelsu: security`，强制要求先构建 `security` 目录。
 
 **修改文件**:
-- `drivers/Makefile` - 移除 kernelsu
-- `Makefile` - 将 kernelsu 添加到 core-y
+- `Makefile` - 添加显式依赖关系
