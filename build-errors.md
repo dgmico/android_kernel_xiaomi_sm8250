@@ -468,3 +468,16 @@
 
 **修改文件**:
 - `drivers/power/supply/maxim/onewire_gpio.c" - 添加缺失的头文件。
+
+---
+
+## 2026-03-06 12:05 - Run 22748239280
+
+**错误**: 大量 "undefined reference"，如 \`mi_drm_register_client\`、\`init_net\`、\`kfree_skb\` 等。
+
+**原因**: GitHub Actions 工作流中的内核配置步骤存在严重缺陷。它直接将配置片段 \`apollo.config\` 拷贝为 \`.config\`，导致基础的 \`kona_defconfig\`（包含网络、DRM 等核心功能）未被应用，最终生成的内核功能严重缺失。
+
+**修复**: 修正工作流。先应用基础 \`vendor/kona_defconfig\`，再通过合并小米通用及特定机型配置片段生成最终配置。
+
+**修改文件**:
+- \`.github/workflows/build-kernel.yml\` - 优化内核配置生成逻辑。
