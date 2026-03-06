@@ -20,6 +20,14 @@
 #include <linux/netfilter/xt_RATEEST.h>
 #include <net/netfilter/xt_rateest.h>
 
+#ifndef XT_RATEEST_H_WORKAROUND
+#define XT_RATEEST_H_WORKAROUND
+struct xt_rateest_target_info {
+	char name[IFNAMSIZ];
+	__u8 interval, exponential_ms;
+};
+#endif
+
 #define RATEEST_HSIZE	16
 
 struct xt_rateest_net {

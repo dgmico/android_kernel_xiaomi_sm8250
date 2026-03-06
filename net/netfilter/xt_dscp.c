@@ -19,6 +19,10 @@
 #include <linux/netfilter/x_tables.h>
 #include <linux/netfilter/xt_DSCP.h>
 
+#ifndef XT_DSCP_SHIFT
+#define XT_DSCP_SHIFT 2
+#endif
+
 MODULE_AUTHOR("Harald Welte <laforge@netfilter.org>");
 MODULE_DESCRIPTION("Xtables: DSCP/TOS field modification");
 MODULE_LICENSE("GPL");

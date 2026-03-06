@@ -16,6 +16,17 @@
 #include <linux/netfilter/xt_mark.h>
 #include <linux/netfilter/x_tables.h>
 
+#ifndef XT_MARK_H_WORKAROUND
+#define XT_MARK_H_WORKAROUND
+struct xt_mark_tginfo2 {
+	__u32 mark, mask;
+};
+struct xt_mark_mtinfo1 {
+	__u32 mark, mask;
+	__u8 invert;
+};
+#endif
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Marc Boucher <marc@mbsi.ca>");
 MODULE_DESCRIPTION("Xtables: packet mark operations");

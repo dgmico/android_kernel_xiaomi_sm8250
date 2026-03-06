@@ -27,6 +27,13 @@
 #include <linux/netfilter/x_tables.h>
 #include <linux/netfilter/xt_connmark.h>
 
+#ifndef XT_CONNMARK_H_WORKAROUND
+#define XT_CONNMARK_H_WORKAROUND
+struct xt_connmark_tginfo2 {
+	__u32 mark, mask;
+};
+#endif
+
 MODULE_AUTHOR("Henrik Nordstrom <hno@marasystems.com>");
 MODULE_DESCRIPTION("Xtables: connection mark operations");
 MODULE_LICENSE("GPL");
