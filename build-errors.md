@@ -708,3 +708,16 @@
 - `techpack/camera-xiaomi/drivers/cam_sync/cam_sync.c`
 - `techpack/camera-bengal/drivers/cam_sync/cam_sync.c`
 - `techpack/camera-xiaomi-cas/drivers/cam_sync/cam_sync.c`
+
+---
+
+## 2026-03-06 23:45 - Run 22769942297
+
+**错误**: `vmlinux: multiple definition of ...` (nt36xxx vs nt36672c)
+
+**原因**: 基础配置 `kona_defconfig` 启用了 `CONFIG_TOUCHSCREEN_NT36XXX=y`，而机型配置 `apollo.config` 启用了 `CONFIG_TOUCHSCREEN_NT36xxx_HOSTDL_SPI=y`。由于这两个驱动包含大量重名的全局函数，同时编入内核导致链接阶段符号冲突。
+
+**修复**: 在 `sm8250-common.config` 中显式禁用 `CONFIG_TOUCHSCREEN_NT36XXX=n`，以消除符号重复定义冲突。
+
+**修改文件**:
+- `arch/arm64/configs/vendor/xiaomi/sm8250-common.config`
