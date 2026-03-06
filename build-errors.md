@@ -123,7 +123,7 @@
 
 **修改文件**:
 - `virt/kvm/kvm_main.c` - 修复 kvm_unmap_hva_range 和 follow_pte_pmd 调用
-- `arch/arm64/include/asm/proc-fns.h` - 删除冲突的 cpu_soft_restart 声明
+- `arch/arm64/include/asm/proc-fns.h` - 删除冲突 of cpu_soft_restart 声明
 
 ---
 
@@ -281,3 +281,18 @@
 
 **修改文件**:
 - `drivers/kernelsu/pkg_observer.c` - 添加 fsnotify 兼容性处理
+
+---
+
+## 2026-03-06 00:55 - Run 22743487946
+
+**错误**: `drivers/kernelsu/setuid_hook.c:51:40: error: ‘TWA_RESUME’ undeclared`
+
+**原因**: `TWA_RESUME` 是在 Linux 5.9 引入的，4.19 内核没有该定义。虽然 `ksu.h` 中已经提供了兼容性宏，但 `setuid_hook.c` 和 `ksud.c` 没有包含该头文件。
+
+**修复**: 
+1. 在 `drivers/kernelsu/setuid_hook.c` 和 `drivers/kernelsu/ksud.c` 中添加 `#include "ksu.h"` 以支持旧版内核。
+
+**修改文件**:
+- `drivers/kernelsu/setuid_hook.c` - 包含 ksu.h
+- `drivers/kernelsu/ksud.c` - 包含 ksu.h

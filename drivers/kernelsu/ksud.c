@@ -9,6 +9,7 @@
 #include <linux/file.h>
 #include <linux/fs.h>
 #include <linux/version.h>
+#include "ksu.h"
 #include <linux/input-event-codes.h>
 #include <linux/kprobes.h>
 #include <linux/printk.h>
