@@ -19,8 +19,13 @@ kernelsu-objs += util.o
 kernelsu-objs += selinux/selinux.o
 kernelsu-objs += selinux/sepolicy.o
 kernelsu-objs += selinux/rules.o
+
 ccflags-y += -I$(srctree)/security/selinux -I$(srctree)/security/selinux/include
-ccflags-y += -I$(objtree)/security/selinux -I$(objtree)/security/selinux/include -include $(srctree)/include/uapi/asm-generic/errno.h
+ccflags-y += -I$(objtree)/security/selinux -I$(objtree)/security/selinux/include
+ccflags-y += -Isecurity/selinux -Isecurity/selinux/include
+ccflags-y += -include $(srctree)/include/uapi/asm-generic/errno.h
+
+subdir-ccflags-y := $(ccflags-y)
 
 obj-$(CONFIG_KSU) += kernelsu.o
 
