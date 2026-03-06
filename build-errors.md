@@ -241,7 +241,7 @@
 
 **原因**: 
 1. `TWA_RESUME` 是在 Linux 5.9 引入的，而 4.19 内核中 `task_work_add` 使用 `bool` 类型的 `notify` 参数。
-2. `allowlist.c` 缺少 `<linux/sched/task.h>` 头文件，导致 `put_task_struct` 未声明。
+2. `allowlist.c` 缺失 `<linux/sched/task.h>` 头文件，导致 `put_task_struct` 未声明。
 
 **修复**: 
 1. 在 `drivers/kernelsu/ksu.h` 中添加 `TWA_RESUME` 的兼容性宏 definition。
@@ -633,4 +633,29 @@
 
 **修改文件**:
 - `techpack/audio/dsp/q6adm.c`
+- `net/netfilter/xt_mark.c`
+
+---
+
+## 2026-03-06 16:05 - Run 22754402655
+
+**错误**:
+1. `techpack/audio/dsp/elliptic/elliptic_sysfs.c: error: 'length' is used uninitialized`
+2. `net/netfilter/xt_connmark.c: error: dereferencing pointer to incomplete type 'const struct xt_connmark_tginfo2'` 及大量未定义符号。
+
+**原因**:
+1. `opmode_show` 等函数中 `length` 变量未初始化即使用 `+=`。
+2. 由于在 macOS 大小写不敏感文件系统上进行合并，导致 UAPI 中 `xt_connmark.h` 和 `xt_CONNMARK.h`（以及 `xt_mark.h` 和 `xt_MARK.h`）内容发生混淆，关键结构体定义丢失。
+
+**修复**:
+1. 初始化 `length = 0`。
+2. 使用 `git hash-object` 和 `git update-index` 手动恢复 UAPI 头文件在 Git 索引中的正确内容，确保大小写不同的文件拥有各自正确的 blob。
+3. 移除之前在 `xt_mark.c` 中添加的临时结构体声明。
+
+**修改文件**:
+- `techpack/audio/dsp/elliptic/elliptic_sysfs.c`
+- `include/uapi/linux/netfilter/xt_connmark.h`
+- `include/uapi/linux/netfilter/xt_CONNMARK.h`
+- `include/uapi/linux/netfilter/xt_mark.h`
+- `include/uapi/linux/netfilter/xt_MARK.h`
 - `net/netfilter/xt_mark.c`
