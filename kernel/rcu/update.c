@@ -73,6 +73,12 @@ module_param(rcu_normal_after_boot, int, 0);
 #endif /* #ifndef CONFIG_TINY_RCU */
 
 #ifdef CONFIG_DEBUG_LOCK_ALLOC
+#include <linux/rcupdate_trace.h>
+struct lockdep_map rcu_trace_lock_map = {
+	.name = "rcu_trace_lock_map",
+};
+EXPORT_SYMBOL_GPL(rcu_trace_lock_map);
+
 /**
  * rcu_read_lock_held_common() - might we be in RCU-sched read-side critical section?
  * @ret:	Best guess answer if lockdep cannot be relied on

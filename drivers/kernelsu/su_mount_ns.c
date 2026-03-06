@@ -22,9 +22,14 @@
 #include "ksu.h"
 #include "su_mount_ns.h"
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
+#define path_mount(dev_name, path, type_page, flags, data_page) \
+    do_mount(dev_name, path, type_page, flags, data_page)
+#else
 extern int path_mount(const char *dev_name, struct path *path,
                       const char *type_page, unsigned long flags,
                       void *data_page);
+#endif
 
 #if defined(__aarch64__)
 extern long __arm64_sys_setns(const struct pt_regs *regs);

@@ -18,30 +18,13 @@
 #include "ksud.h"
 #include "ksu.h"
 
-static bool ksu_kernel_umount_enabled = true;
-
-static int kernel_umount_feature_get(u64 *value)
-{
-    *value = ksu_kernel_umount_enabled ? 1 : 0;
-    return 0;
-}
-
-static int kernel_umount_feature_set(u64 value)
-{
-    bool enable = value != 0;
-    ksu_kernel_umount_enabled = enable;
-    pr_info("kernel_umount: set to %d\n", enable);
-    return 0;
-}
-
-static const struct ksu_feature_handler kernel_umount_handler = {
-    .feature_id = KSU_FEATURE_KERNEL_UMOUNT,
-    .name = "kernel_umount",
-    .get_handler = kernel_umount_feature_get,
-    .set_handler = kernel_umount_feature_set,
-};
-
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 12, 0)
+#define path_umount(path, flags) do_umount((path)->mnt, flags)
+#else
 extern int path_umount(struct path *path, int flags);
+#endif
+
+static bool ksu_kernel_umount_enabled = true;
 
 static void ksu_umount_mnt(struct path *path, int flags)
 {

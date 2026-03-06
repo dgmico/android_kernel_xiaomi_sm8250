@@ -423,7 +423,7 @@
 
 **错误**: `kernel/rcu/tasks.h:437:28: error: dereferencing pointer to incomplete type 'struct rcu_tasks'` 及多个 `RTGS_*` 符号未定义。
 
-**原因**: `kernel/rcu/tasks.h` 中的通用辅助函数（如 `call_rcu_tasks_generic`、`rcu_tasks_wait_gp`）及其使用的结构体/宏定义在条件编译保护上存在逻辑漏洞。`struct rcu_tasks` 被限制 in `CONFIG_TASKS_RCU` 中，而通用函数却暴露在外部。由于该内核配置中 `TASKS_RCU` 依赖 `PREEMPT`，在未开启抢占的情况下，`CONFIG_TASKS_RCU` 为 `n`，导致通用函数编译时找不到结构体定义。
+**原因**: `kernel/rcu/tasks.h` 中的通用辅助函数（如 `call_rcu_tasks_generic`、`rcu_tasks_wait_gp`）及其使用的结构体/宏 definition 在条件编译保护上存在逻辑漏洞。`struct rcu_tasks` 被限制 in `CONFIG_TASKS_RCU` 中，而通用函数却暴露在外部。由于该内核配置中 `TASKS_RCU` 依赖 `PREEMPT`，在未开启抢占的情况下，`CONFIG_TASKS_RCU` 为 `n`，导致通用函数编译时找不到结构体定义。
 
 **修复**: 重构 `kernel/rcu/tasks.h` 的条件编译 structure。将 `struct rcu_tasks` 定义、`RTGS_*` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
 
@@ -721,3 +721,33 @@
 
 **修改文件**:
 - `arch/arm64/configs/vendor/xiaomi/sm8250-common.config`
+
+---
+
+## 2026-03-07 - Run 22770823703
+
+**错误**: 大量 "undefined reference" 错误。
+- `rcu_trace_lock_map` 未定义 (BPF helpers)
+- `__tracepoint_android_vh_...` 未定义 (BPF trampoline/struct_ops)
+- `path_mount` / `path_umount` 未定义 (KernelSU)
+- `ksu_...` 未定义 (KernelSU SELinux rules)
+
+**原因**: 
+1. `rcu_trace_lock_map` 在开启 `CONFIG_DEBUG_LOCK_ALLOC` 时缺少变量定义。
+2. Android Vendor Hooks 虽然在源码中，但配置未开启，导致相关符号无法导出。
+3. `path_mount` 和 `path_umount` 是 Linux 5.x 的 API，在 4.19 中不存在。
+4. `drivers/kernelsu/selinux/sepolicy.c` 包含的是空 stub，导致 `rules.c` 调用时链接失败。
+
+**修复**: 
+1. 在 `kernel/rcu/update.c` 中为 `rcu_trace_lock_map` 添加变量定义。
+2. 在 `sm8250-common.config` 中启用 `CONFIG_ANDROID_VENDOR_HOOKS=y`。
+3. 在 `su_mount_ns.c` 和 `kernel_umount.c` 中为旧版内核添加 `path_mount`/`path_umount` 到 `do_mount`/`do_umount` 的宏映射。
+4. 从 `kernel/KSU` 恢复真实的 `sepolicy.c` 和 `sepolicy.h` 实现。
+
+**修改文件**:
+- `kernel/rcu/update.c`
+- `arch/arm64/configs/vendor/xiaomi/sm8250-common.config`
+- `drivers/kernelsu/su_mount_ns.c`
+- `drivers/kernelsu/kernel_umount.c`
+- `drivers/kernelsu/selinux/sepolicy.c`
+- `drivers/kernelsu/selinux/sepolicy.h`
