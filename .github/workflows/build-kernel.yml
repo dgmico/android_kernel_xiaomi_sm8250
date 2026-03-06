@@ -55,7 +55,7 @@ jobs:
       - name: 生成 SELinux 头文件
         run: |
           make scripts/selinux/genheaders/
-          make security/selinux/flask.h
+          ./scripts/selinux/genheaders/genheaders security/selinux/flask.h security/selinux/av_permissions.h
 
       - name: 编译内核
         run: |

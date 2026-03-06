@@ -303,7 +303,7 @@
 
 **错误**: `drivers/kernelsu/su_mount_ns.c:16:10: fatal error: uapi/linux/mount.h: No such file or directory`
 
-**原因**: `uapi/linux/mount.h` 是在 Linux 5.1 引入的，4.19 内核并不存在。
+**原因**: `uapi/linux/mount.h` 是在 Linux 5.1 引入s的，4.19 内核并不存在。
 
 **修复**: 
 1. 在 `drivers/kernelsu/su_mount_ns.c` 和 `kernel/KSU/kernel/su_mount_ns.c` 中，将 `#include <uapi/linux/mount.h>` 包裹在内核版本检查（`#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)`）中。
@@ -395,7 +395,7 @@
 
 **修复**: 
 1. 移除 `drivers/kernelsu/Kbuild` 中无法解析的显式依赖。
-2. 优化 `.github/workflows/build-kernel.yml` 中的头文件生成步骤，直接针对 `security/selinux/flask.h` 目标进行构建。
+2. 优化 `.github/workflows/build-kernel.yml` 中的头文件生成步骤，通过手动编译 `genheaders` 工具并直接调用来生成 `flask.h`。
 
 **修改文件**:
 - `drivers/kernelsu/Kbuild` - 移除显式依赖。
