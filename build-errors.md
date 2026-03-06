@@ -56,7 +56,7 @@
 
 **错误**: `./include/linux/filter.h:551:2: error: unknown type name 'compat_uptr_t'`
 
-**原因**: `arch/arm64/include/asm/compat.h` 中 `#include <asm-generic/compat.h>` 被放在 `#ifdef CONFIG_COMPAT` 条件块内部，导致某些编译路径下 `compat_uptr_t` 未 definition。x86 架构将此 include 放在条件外部。
+**原因**: `arch/arm64/include/asm/compat.h` 中 `#include <asm-generic/compat.h>` 被放在 `#ifdef CONFIG_COMPAT` 条件块内部，导致某些编译路径下 `compat_uptr_t` 未定义。x86 架构将此 include 放在条件外部。
 
 **修复**: 将 `#include <asm-generic/compat.h>` 移到 `#ifdef CONFIG_COMPAT` 之前，使基本的 compat 类型可以被所有代码访问。
 
@@ -248,7 +248,7 @@
 2. 在 `drivers/kernelsu/allowlist.c` 中添加缺失 of `<linux/sched/task.h>` 和 `<linux/sched.h>`。
 
 **修改文件**:
-- `drivers/kernelsu/ksu.h` - 添加 `TWA_RESUME` 宏定义。
+- `drivers/kernelsu/ksu.h` - 添加 `TWA_RESUME` 宏 definition。
 - `drivers/kernelsu/allowlist.c` - 添加缺失的头文件。
 
 ---
@@ -442,3 +442,16 @@
 
 **修改文件**:
 - `kernel/sched/core.c` - 为 NOHZ 相关调用添加条件编译。
+
+---
+
+## 2026-03-06 11:45 - Run 22747881960
+
+**错误**: `drivers/input/fingerprint/fpc/fpc1020_tee.c: error: implicit declaration of function 'pinctrl_select_state'` 等
+
+**原因**: `fpc1020_tee.c` 使用了 pinctrl 相关 API，但未包含 `<linux/pinctrl/consumer.h>` 头文件。
+
+**修复**: 在 `drivers/input/fingerprint/fpc/fpc1020_tee.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
+
+**修改文件**:
+- `drivers/input/fingerprint/fpc/fpc1020_tee.c` - 添加缺失的头文件。

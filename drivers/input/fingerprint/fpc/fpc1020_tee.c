@@ -43,6 +43,7 @@
 #include <linux/regulator/consumer.h>
 #include <linux/pm_wakeup.h>
 #include <linux/fb.h>
+#include <linux/pinctrl/consumer.h>
 #include <linux/pinctrl/qcom-pinctrl.h>
 #include <drm/drm_bridge.h>
 #include <drm/drm_notifier_mi.h>
