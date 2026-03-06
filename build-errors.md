@@ -97,10 +97,10 @@
 
 **原因**: `enum mmu_notifier_event` 在 `mmu_notifier_range_init` 函数中被使用，但没有定义该枚举类型。
 
-**修复**: 在 mmu_notifier.h 中添加 `enum mmu_notifier_event` 的定义，包含 MMU_NOTIFY_UNMAP, MMU_NOTIFY_CLEAR 等枚举值。
+**修复**: 在 mmu_notifier.h 中添加 `enum mmu_notifier_event` 的 definition，包含 MMU_NOTIFY_UNMAP, MMU_NOTIFY_CLEAR 等枚举值。
 
 **修改文件**:
-- `include/linux/mmu_notifier.h` - 添加 enum mmu_notifier_event 定义
+- `include/linux/mmu_notifier.h` - 添加 enum mmu_notifier_event definition
 
 ---
 
@@ -625,7 +625,7 @@
 
 **原因**:
 1. 在 `port_idx` 被赋值前就已在 `pr_info` 中被调用。
-2. 缺少 UAPI 结构体定义。
+2. 缺少 UAPI 结构体 definition。
 
 **修复**:
 1. 调换代码顺序，确保 `pr_info` 在变量赋值后执行。
@@ -645,7 +645,7 @@
 
 **原因**:
 1. `opmode_show` 等函数中 `length` 变量未初始化即使用 `+=`。
-2. 由于在 macOS 大小写不敏感文件系统上进行合并，导致 UAPI 中 `xt_connmark.h` 和 `xt_CONNMARK.h`（以及 `xt_mark.h` 和 `xt_MARK.h`）内容发生混淆，关键结构体定义丢失。
+2. 由于在 macOS 大小写不敏感文件系统上进行合并，导致 UAPI 中 `xt_connmark.h` 和 `xt_CONNMARK.h`（以及 `xt_mark.h` 和 `xt_MARK.h`）内容发生混淆，关键结构体 definition 丢失。
 
 **修复**:
 1. 初始化 `length = 0`。
@@ -670,7 +670,7 @@
 
 **原因**:
 1. `mius_sysfs.c` 中存在与 `elliptic_sysfs.c` 相同的变量未初始化问题。
-2. UAPI 中更多大小写敏感的头文件对（`xt_dscp.h`/`xt_DSCP.h`、`xt_rateest.h`/`xt_RATEEST.h`、`xt_tcpmss.h`/`xt_TCPMSS.h`）在 macOS 上合并时发生混淆，导致定义缺失。
+2. UAPI 中更多大小写敏感的头文件对（`xt_dscp.h`/`xt_DSCP.h`、`xt_rateest.h`/`xt_RATEEST.h`、`xt_tcpmss.h`/`xt_TCPMSS.h`）在 macOS 上合并时发生混淆，导致 definition 丢失。
 
 **修复**:
 1. 初始化 `mius_sysfs.c` 中的 `length = 0`。
@@ -751,3 +751,29 @@
 - `drivers/kernelsu/kernel_umount.c`
 - `drivers/kernelsu/selinux/sepolicy.c`
 - `drivers/kernelsu/selinux/sepolicy.h`
+
+---
+
+## 2026-03-07 00:45 - Run 22773269842
+
+**错误**: `net/netfilter/xt_connmark.c: error: dereferencing pointer to incomplete type 'const struct xt_connmark_tginfo2'` 及大量未定义符号。
+
+**原因**: 由于在 macOS 大小写不敏感文件系统上进行提交，导致 UAPI 中多组大小写敏感头文件（`xt_connmark.h`/`xt_CONNMARK.h`、`xt_mark.h`/`xt_MARK.h`、`xt_tcpmss.h`/`xt_TCPMSS.h`、`xt_dscp.h`/`xt_DSCP.h`、`xt_rateest.h`/`xt_RATEEST.h`）的内容在 Git 索引中被错误地统一为其中一个版本，导致关键结构体定义丢失。
+
+**修复**: 
+1. 移除 `net/netfilter/xt_connmark.c` 和 `net/netfilter/xt_mark.c` 中之前为了规避头文件缺失而添加的结构体定义 workaround。
+2. 使用 `git update-index --cacheinfo` 手动恢复 Git 索引中所有 10 个 UAPI 头文件与其正确 blob 的对应关系，确保在 Linux 编译环境下能访问到各自正确的定义。
+
+**修改文件**:
+- `net/netfilter/xt_connmark.c`
+- `net/netfilter/xt_mark.c`
+- `include/uapi/linux/netfilter/xt_connmark.h` (Index only)
+- `include/uapi/linux/netfilter/xt_CONNMARK.h` (Index only)
+- `include/uapi/linux/netfilter/xt_mark.h` (Index only)
+- `include/uapi/linux/netfilter/xt_MARK.h` (Index only)
+- `include/uapi/linux/netfilter/xt_tcpmss.h` (Index only)
+- `include/uapi/linux/netfilter/xt_TCPMSS.h` (Index only)
+- `include/uapi/linux/netfilter/xt_dscp.h` (Index only)
+- `include/uapi/linux/netfilter/xt_DSCP.h` (Index only)
+- `include/uapi/linux/netfilter/xt_rateest.h` (Index only)
+- `include/uapi/linux/netfilter/xt_RATEEST.h` (Index only)
