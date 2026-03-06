@@ -325,3 +325,18 @@
 
 **修改文件**:
 - `.github/workflows/build-kernel.yml` - 添加 `container: ubuntu:20.04` 配置，移除 `sudo` 并优化依赖安装流程。
+
+---
+
+## 2026-03-06 01:55 - Run 22744586759
+
+**错误**: `gcc-aarch64-linux-gnu : Depends: gcc-9-aarch64-linux-gnu (>= 9.3.0-3~) but it is not going to be installed`
+
+**原因**: 在 `ubuntu:20.04` 容器中，直接安装 `gcc-aarch64-linux-gnu` 会因依赖冲突失败。由于 Workflow 已经下载了 LineageOS 提供的 GCC 工具链，系统自带的交叉编译器并非必须。
+
+**修复**: 
+1. 从 `apt-get install` 列表中移除 `gcc-aarch64-linux-gnu`。
+2. 在安装其他依赖前先安装 `ca-certificates`，以确保网络请求正常。
+
+**修改文件**:
+- `.github/workflows/build-kernel.yml` - 调整 `安装编译依赖` 步骤。
