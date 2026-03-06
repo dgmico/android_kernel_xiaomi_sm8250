@@ -371,17 +371,16 @@
 
 ---
 
-## 2026-03-06 10:15 - Run 22745767758
+## 2026-03-06 10:35 - Run 22746085566
 
-**错误**: `./security/selinux/include/objsec.h:31:10: fatal error: flask.h: No such file or directory` (重复)
+**错误**: `./security/selinux/include/objsec.h:31:10: fatal error: flask.h: No such file or directory` (再次出现)
 
-**原因**: 并行编译时，`drivers/kernelsu` 可能会在 `security/selinux` 完成头文件生成之前就开始编译。之前的 `drivers/kernelsu: security` 依赖尝试由于编译流程原因未生效。
+**原因**: 虽然增加了包含路径，但在并行编译过程中，`drivers/kernelsu` 可能在 `security/selinux` 尚未生成头文件时就开始编译。由于 KernelSU 作为驱动模块被引入，其依赖关系未能有效约束并行编译顺序。
 
 **修复**: 
-1. 撤销之前的 `core-y` 和顶级 Makefile 依赖修改，回归标准 `obj-y` 结构。
-2. 在 `drivers/kernelsu/Kbuild` 中提供更全面的包含路径，包括相对路径 `-Isecurity/selinux`，并启用 `subdir-ccflags-y` 以确保标志传播。
+1. 在 `drivers/kernelsu/Kbuild` 中为 `selinux.o` 添加显式的头文件依赖：`$(obj)/selinux/selinux.o: security/selinux/flask.h`。
+2. 在 `.github/workflows/build-kernel.yml` 中增加显式生成 SELinux 头文件的步骤，确保在全局编译开始前头文件已就绪。
 
 **修改文件**:
-- `drivers/Makefile` - 恢复 Kernelsu 挂载点
-- `Makefile` - 恢复原始结构
-- `drivers/kernelsu/Kbuild` - 增加更健壮的包含路径和标志传播
+- `drivers/kernelsu/Kbuild` - 添加显式对象依赖。
+- `.github/workflows/build-kernel.yml` - 增加手动头文件生成步骤。

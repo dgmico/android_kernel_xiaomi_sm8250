@@ -52,6 +52,11 @@ jobs:
           make vendor/xiaomi/sm8250-common.config vendor/xiaomi/apollo.config
           grep -E "CONFIG_TASKS" .config
 
+      - name: 生成 SELinux 头文件
+        run: |
+          make scripts/selinux/genheaders/
+          make security/selinux/
+
       - name: 编译内核
         run: |
           make Image.gz-dtb -j$(nproc)
