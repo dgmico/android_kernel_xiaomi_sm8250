@@ -258,7 +258,7 @@ ifeq (y, $(filter y,$(CONFIG_MACH_XIAOMI_DAGU) $(CONFIG_MACH_XIAOMI_MUNCH) $(CON
 CDEFINES += -DAUDIO_FORCE_RESTART_ADSP_TEMP
 endif
 
-KBUILD_CPPFLAGS += $(CDEFINES)
+ccflags-y += $(CDEFINES)
 
 # Currently, for versions of gcc which support it, the kernel Makefile
 # is disabling the maybe-uninitialized warning.  Re-enable it for the

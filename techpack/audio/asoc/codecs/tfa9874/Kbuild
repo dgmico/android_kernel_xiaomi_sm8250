@@ -103,7 +103,7 @@ ifeq ($(CONFIG_MACH_XIAOMI_MUNCH), y)
 	CDEFINES += -DTFA_NON_DSP_SOLUTION
 endif
 
-KBUILD_CPPFLAGS += $(CDEFINES)
+ccflags-y += $(CDEFINES)
 
 # Currently, for versions of gcc which support it, the kernel Makefile
 # is disabling the maybe-uninitialized warning.  Re-enable it for the

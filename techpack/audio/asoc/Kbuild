@@ -256,7 +256,7 @@ ifeq (y, $(filter y,\
 CDEFINES += -DTFA_ADSP_SUPPORTED
 endif
 
-KBUILD_CPPFLAGS += $(CDEFINES)
+ccflags-y += $(CDEFINES)
 
 # Currently, for versions of gcc which support it, the kernel Makefile
 # is disabling the maybe-uninitialized warning.  Re-enable it for the

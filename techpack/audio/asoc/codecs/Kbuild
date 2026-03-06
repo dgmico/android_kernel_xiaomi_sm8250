@@ -223,7 +223,7 @@ CDEFINES +=	-DANI_LITTLE_BYTE_ENDIAN \
 		$(call cc-option,-Wno-enum-conversion) \
 		-D__linux__
 
-KBUILD_CPPFLAGS += $(CDEFINES)
+ccflags-y += $(CDEFINES)
 
 # Currently, for versions of gcc which support it, the kernel Makefile
 # is disabling the maybe-uninitialized warning.  Re-enable it for the

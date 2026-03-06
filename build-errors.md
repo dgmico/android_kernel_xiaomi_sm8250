@@ -407,7 +407,7 @@
 
 **错误**: `drivers/kernelsu/file_wrapper.c` 中 `iopoll`, `remap_file_range` 成员缺失及 `REMAP_FILE_DEDUP` 未定义。
 
-**原因**: 4.19 内核的 `struct file_operations` 不包含 these 较新内核引入的成员和宏。
+**原因**: 4.19 内核的 `struct file_operations` 不包含 these 较新内核引入的成员 and 宏。
 
 **修复**: 
 1. 在 `drivers/kernelsu/file_wrapper.c` 中为 `iopoll` 和 `remap_file_range` 的相关逻辑及赋值添加内核版本检查。
@@ -561,3 +561,36 @@
 
 **修改文件**:
 - `drivers/kernelsu/selinux/rules.c`
+
+---
+
+## 2026-03-06 15:05 - Run 22752345875
+
+**错误**: `techpack/audio/asoc/codecs/Kbuild:226: *** Recursive variable 'KBUILD_CPPFLAGS' references itself (eventually). Stop.`
+
+**原因**: 在某些构建环境中，在子 Kbuild 文件中使用 `+=` 向 `KBUILD_CPPFLAGS` 追加内容可能会导致递归变量错误，特别是当该变量被导出或以某种方式形成循环定义时。
+
+**修复**: 将 `techpack/audio` 目录下所有 21 个 Kbuild 文件中的 `KBUILD_CPPFLAGS += $(CDEFINES)` 替换为 `ccflags-y += $(CDEFINES)`。这是 Kbuild 中添加目录特定 C 编译器标志的标准方式。
+
+**修改文件**:
+- `techpack/audio/asoc/Kbuild`
+- `techpack/audio/dsp/Kbuild`
+- `techpack/audio/ipc/Kbuild`
+- `techpack/audio/asoc/codecs/sdm660_cdc/Kbuild`
+- `techpack/audio/asoc/codecs/msm_sdw/Kbuild`
+- `techpack/audio/asoc/codecs/csra66x0/Kbuild`
+- `techpack/audio/asoc/codecs/aqt1000/Kbuild`
+- `techpack/audio/asoc/codecs/cs35l41/Kbuild`
+- `techpack/audio/asoc/codecs/cs35l41_k81/Kbuild`
+- `techpack/audio/asoc/codecs/wcd938x/Kbuild`
+- `techpack/audio/asoc/codecs/rouleur/Kbuild`
+- `techpack/audio/asoc/codecs/tfa98xx/Kbuild`
+- `techpack/audio/asoc/codecs/Kbuild`
+- `techpack/audio/asoc/codecs/ep92/Kbuild`
+- `techpack/audio/asoc/codecs/bolero/Kbuild`
+- `techpack/audio/asoc/codecs/wcd937x/Kbuild`
+- `techpack/audio/asoc/codecs/wcd934x/Kbuild`
+- `techpack/audio/asoc/codecs/tfa9874/Kbuild`
+- `techpack/audio/asoc/codecs/wsa883x/Kbuild`
+- `techpack/audio/dsp/codecs/Kbuild`
+- `techpack/audio/soc/Kbuild`
