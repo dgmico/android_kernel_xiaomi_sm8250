@@ -144,7 +144,7 @@
 
 **错误**: `kernel/bpf/trampoline.c: error: implicit declaration of function 'call_rcu_tasks_trace'`
 
-**原因**: `kernel/rcu/tasks.h` 中 `call_rcu_tasks_trace` 等函数定义没有被 `#ifdef CONFIG_TASKS_TRACE_RCU` 条件编译保护，导致在某些编译路径下这些函数不可见
+**原因**: `kernel/rcu/tasks.h` 中 `call_rcu_tasks_trace` 等函数定义没有被 `#ifdef CONFIG_TASKS_TRACE_RCU` 条件编译保护，导致在某些编译路径下 these 函数不可见
 
 **修复**: 在 tasks.h 中为 `call_rcu_tasks_trace` 和 `rcu_read_unlock_trace_special` 函数添加 `#ifdef CONFIG_TASKS_TRACE_RCU` 条件编译
 
@@ -311,3 +311,17 @@
 **修改文件**:
 - `drivers/kernelsu/su_mount_ns.c` - 添加内核版本检查
 - `kernel/KSU/kernel/su_mount_ns.c` - 添加内核版本检查
+
+---
+
+## 2026-03-06 01:45 - Build Environment Migration
+
+**变更**: 将编译环境从 `ubuntu-latest` (Ubuntu 24.04) 迁移到 `ubuntu:20.04` Docker 容器。
+
+**原因**: 
+1. LineageOS 官方推荐使用 Ubuntu 20.04 作为构建环境。
+2. Ubuntu 24.04 的工具链过于超前，对旧版 4.19 内核产生的警告过多，且某些旧版依赖包已移除。
+3. 使用固定版本的 Docker 容器能确保构建环境的长期一致性。
+
+**修改文件**:
+- `.github/workflows/build-kernel.yml` - 添加 `container: ubuntu:20.04` 配置，移除 `sudo` 并优化依赖安装流程。
