@@ -368,3 +368,19 @@
 
 **修改文件**:
 - `drivers/kernelsu/Kbuild` - 增加包含路径
+
+---
+
+## 2026-03-06 09:55 - Run 22745169151
+
+**错误**: `./security/selinux/include/objsec.h:31:10: fatal error: flask.h: No such file or directory` (重复)
+
+**原因**: 即使添加了包含路径，由于 `drivers/` 和 `security/` 目录在顶级 Makefile 中是并列的，且没有显式依赖关系，在并行编译时 `drivers/kernelsu` 可能会在 `security/selinux` 生成头文件之前就开始编译。
+
+**修复**: 
+1. 将 KernelSU 从 `drivers/Makefile` 中移除。
+2. 将 KernelSU 添加到顶级 `Makefile` 的 `core-y` 列表中，并排在 `security/` 之后，以确保编译顺序正确。
+
+**修改文件**:
+- `drivers/Makefile` - 移除 kernelsu
+- `Makefile` - 将 kernelsu 添加到 core-y
