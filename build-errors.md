@@ -400,3 +400,19 @@
 **修改文件**:
 - `drivers/kernelsu/Kbuild` - 移除显式依赖。
 - `.github/workflows/build-kernel.yml` - 优化手动头文件生成步骤。
+
+---
+
+## 2026-03-06 11:05 - Run 22746874543
+
+**错误**: `drivers/kernelsu/file_wrapper.c` 中 `iopoll`, `remap_file_range` 成员缺失及 `REMAP_FILE_DEDUP` 未定义。
+
+**原因**: 4.19 内核的 `struct file_operations` 不包含这些较新内核引入的成员和宏。
+
+**修复**: 
+1. 在 `drivers/kernelsu/file_wrapper.c` 中为 `iopoll` 和 `remap_file_range` 的相关逻辑及赋值添加内核版本检查。
+2. 处理 `REMAP_FILE_DEDUP` 宏缺失问题。
+3. 适配 `mmap_supported_flags` 的内核版本差异。
+
+**修改文件**:
+- `drivers/kernelsu/file_wrapper.c` - 添加兼容性条件编译
