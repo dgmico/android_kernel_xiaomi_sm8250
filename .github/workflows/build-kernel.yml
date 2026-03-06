@@ -2,9 +2,9 @@ name: 内核编译
 
 on:
   push:
-    branches: [main, lineage-23.2, 001]
+    branches: [main, lineage-23.2, "001"]
   pull_request:
-    branches: [main, lineage-23.2, 001]
+    branches: [main, lineage-23.2, "001"]
   workflow_dispatch:
 
 jobs:
@@ -69,28 +69,28 @@ jobs:
           cp arch/boot/Image.gz-dtb AnyKernel3/ || cp arch/arm64/boot/Image.gz-dtb AnyKernel3/
 
           # 创建 anykernel.sh
-          cat > AnyKernel3/anykernel.sh << 'EOSH'
-          kernel.string=LineageOS 23.2 for Xiaomi Redmi K30S Ultra
-          device.name1=apollon
-          device.name2=Mi 10T
-          device.name3=K30S Ultra
-          kernel.arch=arm64
-          kernel.path=.
-          kernel.image=Image.gz-dtb
-          run.cmd=flash=zip $AnyKernel3/LineageOS_23.2_kernel.zip $AnyKernel3
-EOSH
+          cat > AnyKernel3/anykernel.sh << 'EOF'
+kernel.string=LineageOS 23.2 for Xiaomi Redmi K30S Ultra
+device.name1=apollon
+device.name2=Mi 10T
+device.name3=K30S Ultra
+kernel.arch=arm64
+kernel.path=.
+kernel.image=Image.gz-dtb
+run.cmd=flash=zip $AnyKernel3/LineageOS_23.2_kernel.zip $AnyKernel3
+EOF
 
           # 创建 updater-script
-          cat > AnyKernel3/updater-script << 'EOSH'
-          ui_print("****************************");
-          ui_print("LineageOS 23.2 Kernel for Apollo");
-          ui_print("****************************");
-          show_progress(0.1, 0);
-          ui_print("Flashing kernel...");
-          package_extract_file("Image.gz-dtb", "/dev/block/bootdevice/by-name/boot");
-          ui_print("Done!");
-          show_progress(0.1, 10);
-EOSH
+          cat > AnyKernel3/updater-script << 'EOF'
+ui_print("****************************");
+ui_print("LineageOS 23.2 Kernel for Apollo");
+ui_print("****************************");
+show_progress(0.1, 0);
+ui_print("Flashing kernel...");
+package_extract_file("Image.gz-dtb", "/dev/block/bootdevice/by-name/boot");
+ui_print("Done!");
+show_progress(0.1, 10);
+EOF
 
           # 打包 ZIP
           cd AnyKernel3
