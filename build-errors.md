@@ -354,3 +354,17 @@
 
 **修改文件**:
 - `drivers/kernelsu/seccomp_cache.c` - 添加兼容性宏定义
+
+---
+
+## 2026-03-06 09:45 - Run 22744912627
+
+**错误**: `./security/selinux/include/objsec.h:31:10: fatal error: flask.h: No such file or directory`
+
+**原因**: KernelSU 在编译自带的 SELinux 钩子时，由于 `flask.h` 是动态生成的头文件（通常位于对象树 `objtree` 中），导致包含路径不全而无法找到。
+
+**修复**: 
+1. 在 `drivers/kernelsu/Kbuild` 中增加对对象树中 SELinux 包含路径的支持：`-I$(objtree)/security/selinux` 和 `-I$(objtree)/security/selinux/include`。
+
+**修改文件**:
+- `drivers/kernelsu/Kbuild` - 增加包含路径
