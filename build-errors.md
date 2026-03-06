@@ -294,7 +294,7 @@
 1. 在 `drivers/kernelsu/setuid_hook.c` 和 `drivers/kernelsu/ksud.c` 中添加 `#include "ksu.h"` 以支持旧版内核。
 
 **修改文件**:
-- `drivers/kernelsu/setuid_hook.c" - 包含 ksu.h
+- `drivers/kernelsu/setuid_hook.c` - 包含 ksu.h
 - `drivers/kernelsu/ksud.c` - 包含 ksu.h
 
 ---
@@ -382,7 +382,7 @@
 2. 在 `.github/workflows/build-kernel.yml` 中增加显式生成 SELinux 头文件的步骤。
 
 **修改文件**:
-- `drivers/kernelsu/Kbuild" - 添加显式对象依赖。
+- `drivers/kernelsu/Kbuild` - 添加显式对象依赖。
 - `.github/workflows/build-kernel.yml` - 增加手动头文件生成步骤。
 
 ---
@@ -398,8 +398,8 @@
 2. 优化 `.github/workflows/build-kernel.yml` 中的头文件生成步骤，通过手动编译 `genheaders` 工具并直接调用来生成 `flask.h`。
 
 **修改文件**:
-- `drivers/kernelsu/Kbuild" - 移除显式依赖。
-- `.github/workflows/build-kernel.yml" - 优化手动头文件生成步骤。
+- `drivers/kernelsu/Kbuild` - 移除显式依赖。
+- `.github/workflows/build-kernel.yml` - 优化手动头文件生成步骤。
 
 ---
 
@@ -428,7 +428,7 @@
 **修复**: 重构 `kernel/rcu/tasks.h` 的条件编译结构。将 `struct rcu_tasks` 定义、`RTGS_*` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
 
 **修改文件**:
-- `kernel/rcu/tasks.h" - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
+- `kernel/rcu/tasks.h` - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
 
 ---
 
@@ -441,7 +441,7 @@
 **修复**: 在 `kernel/sched/core.c` 中为相关调用添加 `#ifdef CONFIG_NO_HZ_COMMON` 保护。
 
 **修改文件**:
-- `kernel/sched/core.c" - 为 NOHZ 相关调用添加条件编译。
+- `kernel/sched/core.c` - 为 NOHZ 相关调用添加条件编译。
 
 ---
 
@@ -454,7 +454,7 @@
 **修复**: 在 `drivers/input/fingerprint/fpc/fpc1020_tee.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
 
 **修改文件**:
-- `drivers/input/fingerprint/fpc/fpc1020_tee.c" - 添加缺失的头文件。
+- `drivers/input/fingerprint/fpc/fpc1020_tee.c` - 添加缺失的头文件。
 
 ---
 
@@ -467,7 +467,7 @@
 **修复**: 在 `drivers/power/supply/maxim/onewire_gpio.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
 
 **修改文件**:
-- `drivers/power/supply/maxim/onewire_gpio.c" - 添加缺失的头文件。
+- `drivers/power/supply/maxim/onewire_gpio.c` - 添加缺失的头文件。
 
 ---
 
@@ -507,3 +507,26 @@
 
 **修改文件**:
 - `.github/workflows/build-kernel.yml` - 添加 cpio 到 apt-get 安装列表。
+
+---
+
+## 2026-03-06 12:35 - Run 22748900903
+
+**错误**: 多个编译错误，包括变量未初始化、不兼容选项及头文件缺失。
+
+**原因**: 
+1. `wm_adsp.c` 在某些分支下未给 `ret` 赋值。
+2. `-Wno-enum-conversion` 在旧版 GCC 中不被支持。
+3. `techpack` 驱动的包含路径配置不当。
+
+**修复**: 
+1. 补全 `wm_adsp.c` 的变量赋值逻辑。
+2. 使用 `cc-option` 包装编译选项。
+3. 修正 `cam_sensor_i2c.h` 包含路径并为 `hid-trace.o` 添加包含路径。
+
+**修改文件**:
+- `techpack/audio/asoc/codecs/cs35l41/wm_adsp.c`
+- `techpack/audio/asoc/codecs/Kbuild`
+- `techpack/camera-xiaomi-cas/drivers/cam_sensor_module/cam_sensor_io/cam_sensor_i2c.h`
+- `drivers/hid/hid-trace.h`
+- `drivers/hid/Makefile`
