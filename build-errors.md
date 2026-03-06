@@ -309,8 +309,8 @@
 1. 在 `drivers/kernelsu/su_mount_ns.c` 和 `kernel/KSU/kernel/su_mount_ns.c` 中，将 `#include <uapi/linux/mount.h>` 包裹在内核版本检查（`#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)`）中。
 
 **修改文件**:
-- `drivers/kernelsu/su_mount_ns.c` - 添加内核版本检查
-- `kernel/KSU/kernel/su_mount_ns.c` - 添加内核版本检查
+- `drivers/kernelsu/su_mount_ns.c" - 添加内核版本检查
+- `kernel/KSU/kernel/su_mount_ns.c" - 添加内核版本检查
 
 ---
 
@@ -383,7 +383,7 @@
 
 **修改文件**:
 - `drivers/kernelsu/Kbuild` - 添加显式对象依赖。
-- `.github/workflows/build-kernel.yml` - 增加手动头文件生成步骤。
+- `.github/workflows/build-kernel.yml" - 增加手动头文件生成步骤。
 
 ---
 
@@ -399,7 +399,7 @@
 
 **修改文件**:
 - `drivers/kernelsu/Kbuild` - 移除显式依赖。
-- `.github/workflows/build-kernel.yml` - 优化手动头文件生成步骤。
+- `.github/workflows/build-kernel.yml" - 优化手动头文件生成步骤。
 
 ---
 
@@ -415,7 +415,7 @@
 3. 适配 `mmap_supported_flags` 的内核版本差异。
 
 **修改文件**:
-- `drivers/kernelsu/file_wrapper.c` - 添加兼容性条件编译
+- `drivers/kernelsu/file_wrapper.c" - 添加兼容性条件编译
 
 ---
 
@@ -428,7 +428,7 @@
 **修复**: 重构 `kernel/rcu/tasks.h` 的条件编译 structure。将 `struct rcu_tasks` 定义、`RTGS_*` 宏以及通用辅助函数统一包裹在 `#if defined(CONFIG_TASKS_RCU) || defined(CONFIG_TASKS_TRACE_RCU)` 中。同时保留 Trampoline 和 Tracing 变体各自特有的实现逻辑在各自的 `#ifdef` 块中。
 
 **修改文件**:
-- `kernel/rcu/tasks.h` - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
+- `kernel/rcu/tasks.h" - 重构条件编译逻辑，确保通用定义在任一相关配置开启时均可用。
 
 ---
 
@@ -441,7 +441,7 @@
 **修复**: 在 `kernel/sched/core.c` 中为相关调用添加 `#ifdef CONFIG_NO_HZ_COMMON` 保护。
 
 **修改文件**:
-- `kernel/sched/core.c` - 为 NOHZ 相关调用添加条件编译。
+- `kernel/sched/core.c" - 为 NOHZ 相关调用添加条件编译。
 
 ---
 
@@ -454,7 +454,7 @@
 **修复**: 在 `drivers/input/fingerprint/fpc/fpc1020_tee.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
 
 **修改文件**:
-- `drivers/input/fingerprint/fpc/fpc1020_tee.c` - 添加缺失的头文件。
+- `drivers/input/fingerprint/fpc/fpc1020_tee.c" - 添加缺失的头文件。
 
 ---
 
@@ -467,7 +467,7 @@
 **修复**: 在 `drivers/power/supply/maxim/onewire_gpio.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
 
 **修改文件**:
-- `drivers/power/supply/maxim/onewire_gpio.c` - 添加缺失的头文件。
+- `drivers/power/supply/maxim/onewire_gpio.c" - 添加缺失的头文件。
 
 ---
 
@@ -480,7 +480,7 @@
 **修复**: 修正工作流。先应用基础 `vendor/kona_defconfig`，再通过合并小米通用及特定机型配置片段生成最终配置。
 
 **修改文件**:
-- `.github/workflows/build-kernel.yml` - 优化内核配置生成逻辑。
+- `.github/workflows/build-kernel.yml" - 优化内核配置生成逻辑。
 
 ---
 
@@ -493,7 +493,7 @@
 **修复**: 在 `lock_release` 中将传递给 `__lock_release` 的参数改为 `0`。
 
 **修改文件**:
-- `kernel/locking/lockdep.c` - 修正 __lock_release 调用参数。
+- `kernel/locking/lockdep.c" - 修正 __lock_release 调用参数。
 
 ---
 
@@ -506,7 +506,7 @@
 **修复**: 在 GitHub Actions 工作流的依赖安装步骤中添加 `cpio`。
 
 **修改文件**:
-- `.github/workflows/build-kernel.yml` - 添加 cpio 到 apt-get 安装列表。
+- `.github/workflows/build-kernel.yml" - 添加 cpio 到 apt-get 安装列表。
 
 ---
 
@@ -594,3 +594,23 @@
 - `techpack/audio/asoc/codecs/wsa883x/Kbuild`
 - `techpack/audio/dsp/codecs/Kbuild`
 - `techpack/audio/soc/Kbuild`
+
+---
+
+## 2026-03-06 15:30 - Run 22753136301
+
+**错误**:
+1. `lib/fault-inject.c:114:9: error: expected expression before 'do'`
+2. `drivers/media/dvb-core/dmxdev.c:4686:3: error: pr_err format string... format string is defined here ... ~^ ... char *`
+
+**原因**:
+1. `WRITE_ONCE` 在此内核中被定义为 `do { ... } while (0)` 块，不能用在 `if` 语句作为表达式。
+2. `pr_err` 包含 `%s` 但未提供相应的 `__func__` 参数。
+
+**修复**:
+1. 将 `WRITE_ONCE` 从 `if` 中拆分出来单独执行。
+2. 在 `pr_err` 中添加 `__func__` 参数。
+
+**修改文件**:
+- `lib/fault-inject.c`
+- `drivers/media/dvb-core/dmxdev.c`
