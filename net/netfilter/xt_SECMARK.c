@@ -19,6 +19,22 @@
 #include <linux/netfilter/x_tables.h>
 #include <linux/netfilter/xt_SECMARK.h>
 
+#ifndef XT_SECMARK_H_WORKAROUND
+#define XT_SECMARK_H_WORKAROUND
+#define SECMARK_MODE_SEL	0x01
+#define SECMARK_SECCTX_MAX	256
+struct xt_secmark_target_info {
+	__u8 mode;
+	__u32 secid;
+	char secctx[SECMARK_SECCTX_MAX];
+};
+struct xt_secmark_target_info_v1 {
+	__u8 mode;
+	char secctx[SECMARK_SECCTX_MAX];
+	__u32 secid;
+};
+#endif
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("James Morris <jmorris@redhat.com>");
 MODULE_DESCRIPTION("Xtables: packet security mark modification");

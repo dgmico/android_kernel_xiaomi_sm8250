@@ -20,6 +20,17 @@
 #include <linux/skbuff.h>
 #include <linux/netfilter/x_tables.h>
 #include <linux/netfilter/xt_CONNSECMARK.h>
+
+#ifndef XT_CONNSECMARK_H_WORKAROUND
+#define XT_CONNSECMARK_H_WORKAROUND
+enum {
+	CONNSECMARK_SAVE = 1,
+	CONNSECMARK_RESTORE,
+};
+struct xt_connsecmark_target_info {
+	__u8 mode;
+};
+#endif
 #include <net/netfilter/nf_conntrack.h>
 #include <net/netfilter/nf_conntrack_ecache.h>
 

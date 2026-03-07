@@ -303,7 +303,7 @@
 
 **错误**: `drivers/kernelsu/su_mount_ns.c:16:10: fatal error: uapi/linux/mount.h: No such file or directory`
 
-**原因**: `uapi/linux/mount.h` 是在 Linux 5.1 引入s的，4.19 内核并不存在。
+**原因**: `uapi/linux/mount.h` 是在 Linux 5.1 引入s的，4.19 内内核并不存在。
 
 **修复**: 
 1. 在 `drivers/kernelsu/su_mount_ns.c` 和 `kernel/KSU/kernel/su_mount_ns.c` 中，将 `#include <uapi/linux/mount.h>` 包裹在内核版本检查（`#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 1, 0)`）中。
@@ -599,15 +599,15 @@
 
 ## 2026-03-06 15:30 - Run 22753136301
 
-**错误**:
+**错误**: 
 1. `lib/fault-inject.c:114:9: error: expected expression before 'do'`
 2. `drivers/media/dvb-core/dmxdev.c:4686:3: error: pr_err format string... format string is defined here ... ~^ ... char *`
 
-**原因**:
+**原因**: 
 1. `WRITE_ONCE` 在此内核中被定义为 `do { ... } while (0)` 块，不能用在 `if` 语句作为表达式。
 2. `pr_err` 包含 `%s` 但未提供相应的 `__func__` 参数。
 
-**修复**:
+**修复**: 
 1. 将 `WRITE_ONCE` 从 `if` 中拆分出来单独执行。
 2. 在 `pr_err` 中添加 `__func__` 参数。
 
@@ -619,15 +619,15 @@
 
 ## 2026-03-06 15:45 - Run 22753740632
 
-**错误**:
+**错误**: 
 1. `techpack/audio/dsp/q6adm.c:883:2: error: 'port_idx' is used uninitialized`
 2. `net/netfilter/xt_mark.c:33:32: error: dereferencing pointer to incomplete type 'const struct xt_mark_tginfo2'`
 
-**原因**:
+**原因**: 
 1. 在 `port_idx` 被赋值前就已在 `pr_info` 中被调用。
 2. 缺少 UAPI 结构体 definition。
 
-**修复**:
+**修复**: 
 1. 调换代码顺序，确保 `pr_info` 在变量赋值后执行。
 2. 在 `xt_mark.c` 中手动添加 `xt_mark_tginfo2` 和 `xt_mark_mtinfo1` 结构体声明。
 
@@ -639,15 +639,15 @@
 
 ## 2026-03-06 16:05 - Run 22754402655
 
-**错误**:
+**错误**: 
 1. `techpack/audio/dsp/elliptic/elliptic_sysfs.c: error: 'length' is used uninitialized`
 2. `net/netfilter/xt_connmark.c: error: dereferencing pointer to incomplete type 'const struct xt_connmark_tginfo2'` 及大量未定义符号。
 
-**原因**:
+**原因**: 
 1. `opmode_show` 等函数中 `length` 变量未初始化即使用 `+=`。
 2. 由于在 macOS 大小写不敏感文件系统上进行合并，导致 UAPI 中 `xt_connmark.h` 和 `xt_CONNMARK.h`（以及 `xt_mark.h` 和 `xt_MARK.h`）内容发生混淆，关键结构体 definition 丢失。
 
-**修复**:
+**修复**: 
 1. 初始化 `length = 0`。
 2. 使用 `git hash-object` 和 `git update-index` 手动恢复 UAPI 头文件在 Git 索引中的正确内容，确保大小写不同的文件拥有各自正确的 blob。
 3. 移除之前在 `xt_mark.c` 中添加的临时结构体声明。
@@ -664,15 +664,15 @@
 
 ## 2026-03-06 16:55 - Run 22755787843
 
-**错误**:
+**错误**: 
 1. `techpack/audio/dsp/mius/mius_sysfs.c: error: 'length' is used uninitialized`
 2. `net/netfilter/xt_DSCP.c: error: 'XT_DSCP_SHIFT' undeclared` 等
 
-**原因**:
+**原因**: 
 1. `mius_sysfs.c` 中存在与 `elliptic_sysfs.c` 相同的变量未初始化问题。
 2. UAPI 中更多大小写敏感的头文件对（`xt_dscp.h`/`xt_DSCP.h`、`xt_rateest.h`/`xt_RATEEST.h`、`xt_tcpmss.h`/`xt_TCPMSS.h`）在 macOS 上合并时发生混淆，导致 definition 丢失。
 
-**修复**:
+**修复**: 
 1. 初始化 `mius_sysfs.c` 中的 `length = 0`。
 2. 再次使用 `git hash-object` 和 `git update-index` 手动恢复剩余所有哈希重复的 UAPI 头文件内容。
 
@@ -689,15 +689,15 @@
 
 ## 2026-03-06 17:15 - Run 22757326537
 
-**错误**:
+**错误**: 
 1. `./include/trace/define_trace.h:89:42: fatal error: ./pll_trace.h: No such file or directory`
 2. `techpack/camera-xiaomi-cas/drivers/cam_sync/cam_sync.c: error: format string mismatches`
 
-**原因**:
+**原因**: 
 1. `techpack/display/pll/` 目录下 Tracepoint 包含路径配置缺失，导致编译器找不到同目录下的 `pll_trace.h`。
 2. 相机同步驱动 `cam_sync.c` 中存在多处格式化字符串与变量类型不匹配的问题（如 `atomic_t` 误用 `%d`，`long` 误用 `%d`），在开启 `-Werror` 的环境下导致编译失败。
 
-**修复**:
+**修复**: 
 1. 在 `techpack/display/pll/Makefile` 中添加 `ccflags-y += -I$(src)`。
 2. 修复 `techpack` 中所有 `cam_sync.c` 变体的格式化字符串错误：将 `atomic_t` 类型包装为 `atomic_read()`，并修正 `%d` 为 `%ld`（对应 `long`）或 `%u`（对应 `uint32_t`）。
 
@@ -780,19 +780,24 @@
 
 ---
 
-## 2026-03-07 - Run N/A (offline analysis)
+## 2026-03-07 23:45 - Run 22801704361
 
-**错误**: netfilter UAPI 头文件与模块源码定义错位，导致后续编译可能出现结构体重定义/不完整类型相关错误。
+**错误**: `net/netfilter/xt_mark.c: error: dereferencing pointer to incomplete type 'const struct xt_mark_tginfo2'` 等多处 Netfilter 编译错误。
 
-**原因**:
-1. 在大小写不敏感文件系统上，`xt_*.h` 与 `xt_*.h`（大小写不同）内容再次发生串写，导致小写头文件被错误替换为 target 版本定义。
-2. 为绕过该问题临时加入的 `xt_dscp.c`/`xt_rateest.c`/`xt_tcpmss.c` 本地 workaround 与正确 UAPI 同时存在时会产生二次冲突。
+**原因**: 
+1. 在 macOS 大小写不敏感文件系统上，UAPI 中多组大小写敏感头文件（`xt_mark.h`/`xt_MARK.h`、`xt_connmark.h`/`xt_CONNMARK.h` 等）在 Git 索引中发生冲突，导致关键结构体定义丢失。
+2. 之前的 `git update-index --cacheinfo` 修复方案在 macOS 环境下极易因 `git add` 或 `git status` 再次失效，导致磁盘上的单一文件版本覆盖 Git 索引中的正确内容。
 
-**修复**:
-1. 恢复 netfilter 模块源码，移除临时 workaround（让定义来源回到正确 UAPI 头文件）。
-2. 保持 Git index 中大小写敏感头文件的正确 blob 对应关系，避免错误内容被提交。
+**修复**: 
+1. 采用更稳健的 Workaround：直接在相关的 `.c` 模块源文件中手动添加缺失的结构体定义、枚举和宏定义。
+2. 这种方式绕过了对外部冲突头文件的依赖，确保在大小写不敏感环境下也能在 GitHub Actions (Linux) 中正确编译。
+3. 涵盖了 `xt_mark.c`、`xt_connmark.c`、`xt_DSCP.c`、`xt_RATEEST.c`、`xt_TCPMSS.c`、`xt_SECMARK.c` 和 `xt_CONNSECMARK.c` 等模块。
 
 **修改文件**:
-- `net/netfilter/xt_dscp.c` - 移除 `XT_DSCP_SHIFT` 临时宏
-- `net/netfilter/xt_rateest.c` - 移除 `xt_rateest_target_info` 临时结构体
-- `net/netfilter/xt_tcpmss.c` - 移除 `XT_TCPMSS_CLAMP_MSS` 临时宏
+- `net/netfilter/xt_mark.c`
+- `net/netfilter/xt_connmark.c`
+- `net/netfilter/xt_DSCP.c`
+- `net/netfilter/xt_RATEEST.c`
+- `net/netfilter/xt_TCPMSS.c`
+- `net/netfilter/xt_SECMARK.c`
+- `net/netfilter/xt_CONNSECMARK.c`
