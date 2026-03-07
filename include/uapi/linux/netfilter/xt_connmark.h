@@ -1,7 +1,8 @@
-/* SPDX-License-Identifier: GPL-2.0 WITH Linux-syscall-note */
-#ifndef _XT_CONNMARK_H_target
-#define _XT_CONNMARK_H_target
-
-#include <linux/netfilter/xt_connmark.h>
-
-#endif /*_XT_CONNMARK_H_target*/
+#ifndef _XT_CONNMARK_H
+#define _XT_CONNMARK_H
+#include <linux/types.h>
+struct xt_connmark_mtinfo1 {
+	__u32 mark, mask;
+	__u8 invert;
+};
+#endif

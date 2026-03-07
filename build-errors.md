@@ -789,9 +789,10 @@
 2. 之前的 `git update-index --cacheinfo` 修复方案在 macOS 环境下极易因 `git add` 或 `git status` 再次失效，导致磁盘上的单一文件版本覆盖 Git 索引中的正确内容。
 
 **修复**: 
-1. 采用更稳健的 Workaround：直接在相关的 `.c` 模块源文件中手动添加缺失的结构体定义、枚举和宏定义。
-2. 这种方式绕过了对外部冲突头文件的依赖，确保在大小写不敏感环境下也能在 GitHub Actions (Linux) 中正确编译。
-3. 涵盖了 `xt_mark.c`、`xt_connmark.c`、`xt_DSCP.c`、`xt_RATEEST.c`、`xt_TCPMSS.c`、`xt_SECMARK.c` 和 `xt_CONNSECMARK.c` 等模块。
+1. 彻底修复方案：使用 `git update-index --cacheinfo` 手动为 UAPI 中所有 10 个冲突头文件（`xt_mark.h/xt_MARK.h` 等）恢复正确的 Git 索引内容。
+2. 确保大小写对在 GitHub Actions (Linux) 编译环境下能访问到各自独立的、完整的结构体定义。
+3. 移除之前在 `.c` 模块源文件中添加的所有临时结构体 workaround，使代码回到标准状态。
+4. 手动同步 `xt_DSCP.c/xt_dscp.c` 等源文件的 Git 索引，确保所有编译单元都使用最新代码。
 
 **修改文件**:
 - `net/netfilter/xt_mark.c`
