@@ -27,6 +27,14 @@
 #include <linux/netfilter/xt_tcpudp.h>
 #include <linux/netfilter/xt_TCPMSS.h>
 
+#ifndef XT_TCPMSS_H_WORKAROUND
+#define XT_TCPMSS_H_WORKAROUND
+struct xt_tcpmss_info {
+	__u16 mss;
+};
+#define XT_TCPMSS_CLAMP_PMTU 0xffff
+#endif
+
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Marc Boucher <marc@mbsi.ca>");
 MODULE_DESCRIPTION("Xtables: TCP Maximum Segment Size (MSS) adjustment");
