@@ -19,26 +19,6 @@
 #include <linux/netfilter/x_tables.h>
 #include <linux/netfilter/xt_DSCP.h>
 
-#ifndef XT_DSCP_H_WORKAROUND
-#define XT_DSCP_H_WORKAROUND
-#define XT_DSCP_MASK	0xfc
-#define XT_DSCP_SHIFT	2
-#define XT_DSCP_MAX	0x3f
-/* target info */
-struct xt_DSCP_info {
-	__u8 dscp;
-};
-struct xt_tos_target_info {
-	__u8 tos_value;
-	__u8 tos_mask;
-};
-/* match info */
-struct xt_dscp_info {
-	__u8 dscp;
-	__u8 invert;
-};
-#endif
-
 MODULE_AUTHOR("Harald Welte <laforge@netfilter.org>");
 MODULE_DESCRIPTION("Xtables: DSCP/TOS field modification");
 MODULE_LICENSE("GPL");
