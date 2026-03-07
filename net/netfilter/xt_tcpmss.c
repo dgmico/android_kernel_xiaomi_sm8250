@@ -27,10 +27,6 @@
 #include <linux/netfilter/xt_tcpudp.h>
 #include <linux/netfilter/xt_TCPMSS.h>
 
-#ifndef XT_TCPMSS_CLAMP_MSS
-#define XT_TCPMSS_CLAMP_MSS 0xffff
-#endif
-
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Marc Boucher <marc@mbsi.ca>");
 MODULE_DESCRIPTION("Xtables: TCP Maximum Segment Size (MSS) adjustment");

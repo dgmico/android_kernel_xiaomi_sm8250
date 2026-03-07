@@ -777,3 +777,22 @@
 - `include/uapi/linux/netfilter/xt_DSCP.h` (Index only)
 - `include/uapi/linux/netfilter/xt_rateest.h` (Index only)
 - `include/uapi/linux/netfilter/xt_RATEEST.h` (Index only)
+
+---
+
+## 2026-03-07 - Run N/A (offline analysis)
+
+**错误**: netfilter UAPI 头文件与模块源码定义错位，导致后续编译可能出现结构体重定义/不完整类型相关错误。
+
+**原因**:
+1. 在大小写不敏感文件系统上，`xt_*.h` 与 `xt_*.h`（大小写不同）内容再次发生串写，导致小写头文件被错误替换为 target 版本定义。
+2. 为绕过该问题临时加入的 `xt_dscp.c`/`xt_rateest.c`/`xt_tcpmss.c` 本地 workaround 与正确 UAPI 同时存在时会产生二次冲突。
+
+**修复**:
+1. 恢复 netfilter 模块源码，移除临时 workaround（让定义来源回到正确 UAPI 头文件）。
+2. 保持 Git index 中大小写敏感头文件的正确 blob 对应关系，避免错误内容被提交。
+
+**修改文件**:
+- `net/netfilter/xt_dscp.c` - 移除 `XT_DSCP_SHIFT` 临时宏
+- `net/netfilter/xt_rateest.c` - 移除 `xt_rateest_target_info` 临时结构体
+- `net/netfilter/xt_tcpmss.c` - 移除 `XT_TCPMSS_CLAMP_MSS` 临时宏
