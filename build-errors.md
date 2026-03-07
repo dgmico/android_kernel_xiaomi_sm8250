@@ -789,10 +789,10 @@
 2. 之前的 `git update-index --cacheinfo` 修复方案在 macOS 环境下极易因 `git add` 或 `git status` 再次失效，导致磁盘上的单一文件版本覆盖 Git 索引中的正确内容。
 
 **修复**: 
-1. 彻底修复方案：使用 `git update-index --cacheinfo` 手动为 UAPI 中所有 10 个冲突头文件（`xt_mark.h/xt_MARK.h` 等）恢复正确的 Git 索引内容。
-2. 确保大小写对在 GitHub Actions (Linux) 编译环境下能访问到各自独立的、完整的结构体定义。
-3. 移除之前在 `.c` 模块源文件中添加的所有临时结构体 workaround，使代码回到标准状态。
-4. 手动同步 `xt_DSCP.c/xt_dscp.c` 等源文件的 Git 索引，确保所有编译单元都使用最新代码。
+1. 终极修复方案：使用 `git update-index --cacheinfo` 手动为 UAPI 中所有 10 个冲突头文件（`xt_mark.h/xt_MARK.h` 等）恢复正确的 Git 索引内容。
+2. 特别策略：为了兼容 macOS 大小写不敏感环境并避免 Linux 环境下的循环包含，让每一对大小写头文件在 Git 索引中指向**完全相同**的 blob，且该 blob 包含该模块**全量**（Match + Target）的结构体、枚举和宏定义。
+3. 移除之前在 `.c` 模块源文件中添加的所有临时结构体 workaround，确保代码逻辑纯净。
+4. 手动同步 `xt_DSCP.c/xt_dscp.c` 等源文件的 Git 索引，确保编译单元一致性。
 
 **修改文件**:
 - `net/netfilter/xt_mark.c`
