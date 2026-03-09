@@ -29,6 +29,7 @@ jobs:
       - name: 修复 Netfilter 头文件 (大小写冲突)
         run: |
           # 强制从仓库恢复可能被损坏的文件
+          git config --global --add safe.directory $GITHUB_WORKSPACE
           git checkout include/uapi/linux/netfilter/xt_mark.h
           git checkout include/uapi/linux/netfilter/xt_MARK.h
           git checkout include/uapi/linux/netfilter/xt_connmark.h
