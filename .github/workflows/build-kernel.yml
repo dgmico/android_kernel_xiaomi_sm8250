@@ -56,6 +56,8 @@ jobs:
           echo "CONFIG_BPF_EVENTS=y" >> .config
           echo "CONFIG_NET_CLS_ACT=y" >> .config
           echo "CONFIG_NET_SCH_INGRESS=y" >> .config
+          echo "CONFIG_NET_ACT_BPF=y" >> .config
+          echo "CONFIG_NET_CLS_BPF=y" >> .config
           make olddefconfig
 
       - name: 生成 SELinux 头文件
@@ -96,7 +98,7 @@ jobs:
         run: |
           wget -q https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.pk8 -O testkey.pk8
           wget -q https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.x509.pem -O testkey.x509.pem
-          java -jar /usr/share/java/apksigner.jar sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip
+          apksigner sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip
           echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
 
       - name: 上传编译产物
