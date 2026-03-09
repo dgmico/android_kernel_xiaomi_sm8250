@@ -62,46 +62,40 @@ jobs:
         run: |
           make Image.gz-dtb -j$(nproc)
 
+      - name: 获取当前日期
+        id: date
+        run: |
+          echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
       - name: 创建可刷入 ZIP
         run: |
-          # 创建 AnyKernel3 目录结构
-          mkdir -p AnyKernel3
+          # 克隆 AnyKernel3 模版
+          git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git AnyKernel3
+          rm -rf AnyKernel3/.git
+
+          # 放入内核镜像
           cp arch/arm64/boot/Image.gz-dtb AnyKernel3/
 
-          # 创建 anykernel.sh
-          cat > AnyKernel3/anykernel.sh << 'EOF'
-          kernel.string=LineageOS 23.2 for Xiaomi Redmi K30S Ultra
-          device.name1=apollon
-          device.name2=Mi 10T
-          device.name3=K30S Ultra
-          kernel.arch=arm64
-          kernel.path=.
-          kernel.image=Image.gz-dtb
-          run.cmd=flash=zip $AnyKernel3/LineageOS_23.2_kernel.zip $AnyKernel3
-          EOF
-
-          # 创建 updater-script
-          cat > AnyKernel3/updater-script << 'EOF'
-          ui_print("****************************");
-          ui_print("LineageOS 23.2 Kernel for Apollo");
-          ui_print("****************************");
-          show_progress(0.1, 0);
-          ui_print("Flashing kernel...");
-          package_extract_file("Image.gz-dtb", "/dev/block/bootdevice/by-name/boot");
-          ui_print("Done!");
-          show_progress(0.1, 10);
-          EOF
+          # 配置 AnyKernel3 脚本
+          sed -i 's/do.devicecheck=1/do.devicecheck=1/' AnyKernel3/anykernel.sh
+          sed -i 's/device.name1=maguro/device.name1=apollo/' AnyKernel3/anykernel.sh
+          sed -i 's/device.name2=toro/device.name2=apollon/' AnyKernel3/anykernel.sh
+          sed -i 's/device.name3=toroplus/device.name3=Mi 10T/' AnyKernel3/anykernel.sh
+          sed -i 's/device.name4=/device.name4=K30S Ultra/' AnyKernel3/anykernel.sh
+          sed -i 's/block=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/boot/block=\/dev\/block\/bootdevice\/by-name\/boot/' AnyKernel3/anykernel.sh
+          sed -i 's/is_slot_device=0/is_slot_device=0/' AnyKernel3/anykernel.sh
 
           # 打包 ZIP
           cd AnyKernel3
-          zip -r ../LineageOS_23.2_kernel.zip *
+          zip -r ../Kernel-apollo-${{ steps.date.outputs.date }}.zip *
           cd ..
+          echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
 
       - name: 上传编译产物
         uses: actions/upload-artifact@v4
         with:
           name: kernel-zip
-          path: LineageOS_23.2_kernel.zip
+          path: ${{ env.ZIP_NAME }}
           retention-days: 7
 
       - name: 发送 Telegram 成功通知
