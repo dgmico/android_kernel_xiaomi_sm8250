@@ -51,6 +51,12 @@ jobs:
           make vendor/kona_defconfig
           cat arch/arm64/configs/vendor/xiaomi/sm8250-common.config >> .config
           cat arch/arm64/configs/vendor/xiaomi/apollo.config >> .config
+          # Android 16 (LineageOS 23.2) 必需的现代内核配置
+          echo "CONFIG_BPF_KPROBE_OVERRIDE=y" >> .config
+          echo "CONFIG_BPF_EVENTS=y" >> .config
+          echo "CONFIG_BPF_STREAM_PARSER=y" >> .config
+          echo "CONFIG_NET_CLS_ACT=y" >> .config
+          echo "CONFIG_NET_SCH_INGRESS=y" >> .config
           make olddefconfig
 
       - name: 生成 SELinux 头文件
@@ -76,7 +82,7 @@ jobs:
           # 放入内核镜像
           cp arch/arm64/boot/Image.gz-dtb AnyKernel3/
 
-          # 配置 AnyKernel3 脚本 (适配 A/B 分区和自动路径)
+          # 配置 AnyKernel3 脚本 (适配 A/B 分区)
           sed -i 's/do.devicecheck=1/do.devicecheck=1/' AnyKernel3/anykernel.sh
           sed -i 's/device.name1=maguro/device.name1=apollo/' AnyKernel3/anykernel.sh
           sed -i 's/device.name2=toro/device.name2=apollon/' AnyKernel3/anykernel.sh
@@ -85,12 +91,15 @@ jobs:
           sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=auto|' AnyKernel3/anykernel.sh
           sed -i 's/is_slot_device=0/is_slot_device=auto/' AnyKernel3/anykernel.sh
 
-          # 确保脚本权限正确
+          # 强制赋予最高兼容性权限
           chmod -R 755 AnyKernel3/
+          
+          # 验证 META-INF 路径 (防止 recovery 找不到 update-binary)
+          ls -R AnyKernel3/META-INF
 
           # 打包 ZIP
           cd AnyKernel3
-          zip -r ../unsigned.zip *
+          zip -r9 ../unsigned.zip . -x ".git*"
           cd ..
 
       - name: 签名 ZIP (解决签名验证失败)
