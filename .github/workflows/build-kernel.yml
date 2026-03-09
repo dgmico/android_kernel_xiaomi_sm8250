@@ -54,7 +54,6 @@ jobs:
           # Android 16 (LineageOS 23.2) 必需的现代内核配置
           echo "CONFIG_BPF_KPROBE_OVERRIDE=y" >> .config
           echo "CONFIG_BPF_EVENTS=y" >> .config
-          echo "CONFIG_BPF_STREAM_PARSER=y" >> .config
           echo "CONFIG_NET_CLS_ACT=y" >> .config
           echo "CONFIG_NET_SCH_INGRESS=y" >> .config
           make olddefconfig
