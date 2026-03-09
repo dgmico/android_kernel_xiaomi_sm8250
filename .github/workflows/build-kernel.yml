@@ -16,6 +16,20 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
+      - name: 修复 Netfilter 头文件 (大小写冲突)
+        run: |
+          # 强制从仓库恢复可能被损坏的文件
+          git checkout include/uapi/linux/netfilter/xt_mark.h
+          git checkout include/uapi/linux/netfilter/xt_MARK.h
+          git checkout include/uapi/linux/netfilter/xt_connmark.h
+          git checkout include/uapi/linux/netfilter/xt_CONNMARK.h
+          git checkout include/uapi/linux/netfilter/xt_dscp.h
+          git checkout include/uapi/linux/netfilter/xt_DSCP.h
+          git checkout include/uapi/linux/netfilter/xt_rateest.h
+          git checkout include/uapi/linux/netfilter/xt_RATEEST.h
+          git checkout include/uapi/linux/netfilter/xt_tcpmss.h
+          git checkout include/uapi/linux/netfilter/xt_TCPMSS.h
+
       - name: 安装编译依赖
         run: |
           apt-get update
