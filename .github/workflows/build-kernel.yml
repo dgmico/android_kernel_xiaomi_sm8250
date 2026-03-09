@@ -63,6 +63,21 @@ jobs:
           make scripts/selinux/genheaders/
           ./scripts/selinux/genheaders/genheaders security/selinux/flask.h security/selinux/av_permissions.h
 
+      - name: 修复 Netfilter 编译冲突 (动态注入缺失定义)
+        run: |
+          # xt_mark.h 注入
+          echo 'struct xt_mark_tginfo2 { __u32 mark, mask; };' >> include/uapi/linux/netfilter/xt_mark.h
+          echo 'struct xt_mark_mtinfo1 { __u32 mark, mask; __u8 invert; };' >> include/uapi/linux/netfilter/xt_mark.h
+          # xt_connmark.h 注入
+          echo 'struct xt_connmark_tginfo2 { __u32 ctmark, ctmask, nfmask; __u8 shift_dir, shift_bits, mode; };' >> include/uapi/linux/netfilter/xt_connmark.h
+          echo 'struct xt_connmark_mtinfo1 { __u32 mark, mask; __u8 invert; };' >> include/uapi/linux/netfilter/xt_connmark.h
+          # xt_dscp.h 注入
+          echo 'struct xt_DSCP_info { __u8 dscp; };' >> include/uapi/linux/netfilter/xt_dscp.h
+          # xt_rateest.h 注入
+          echo 'struct xt_rateest_target_info { char name[IFNAMSIZ]; __s8 interval, ewma_log; __u32 bps, pps; };' >> include/uapi/linux/netfilter/xt_rateest.h
+          # xt_tcpmss.h 注入
+          echo 'struct xt_tcpmss_info { __u16 mss; };' >> include/uapi/linux/netfilter/xt_tcpmss.h
+
       - name: 编译内核
         run: |
           make Image.gz-dtb -j$(nproc)
