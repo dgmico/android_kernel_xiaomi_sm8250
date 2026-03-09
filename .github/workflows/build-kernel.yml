@@ -26,21 +26,6 @@ jobs:
             xsltproc unzip bc clang wget python3 libssl-dev \
             x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils cpio openjdk-17-jdk-headless apksigner
 
-      - name: 修复 Netfilter 头文件 (大小写冲突)
-        run: |
-          cd $GITHUB_WORKSPACE || cd /github/workspace || exit 1
-          git config --global --add safe.directory "*"
-          git checkout include/uapi/linux/netfilter/xt_mark.h
-          git checkout include/uapi/linux/netfilter/xt_MARK.h
-          git checkout include/uapi/linux/netfilter/xt_connmark.h
-          git checkout include/uapi/linux/netfilter/xt_CONNMARK.h
-          git checkout include/uapi/linux/netfilter/xt_dscp.h
-          git checkout include/uapi/linux/netfilter/xt_DSCP.h
-          git checkout include/uapi/linux/netfilter/xt_rateest.h
-          git checkout include/uapi/linux/netfilter/xt_RATEEST.h
-          git checkout include/uapi/linux/netfilter/xt_tcpmss.h
-          git checkout include/uapi/linux/netfilter/xt_TCPMSS.h
-
       - name: 下载 GCC 工具链
         run: |
           git clone --depth=1 -b lineage-23.2 \
