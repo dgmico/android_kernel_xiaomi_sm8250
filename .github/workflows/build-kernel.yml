@@ -51,75 +51,52 @@ jobs:
           make vendor/kona_defconfig
           cat arch/arm64/configs/vendor/xiaomi/sm8250-common.config >> .config
           cat arch/arm64/configs/vendor/xiaomi/apollo.config >> .config
-          # Android 16 (LineageOS 23.2) 必需的现代内核配置
+          # Android 16 (LineageOS 23.2) 必需配置
           echo "CONFIG_BPF_KPROBE_OVERRIDE=y" >> .config
           echo "CONFIG_BPF_EVENTS=y" >> .config
           echo "CONFIG_NET_CLS_ACT=y" >> .config
           echo "CONFIG_NET_SCH_INGRESS=y" >> .config
           make olddefconfig
-- name: 生成 SELinux 头文件
-  run: |
-    make scripts/selinux/genheaders/
-    ./scripts/selinux/genheaders/genheaders security/selinux/flask.h security/selinux/av_permissions.h
 
-- name: 编译内核
-  run: |
-    make Image.gz-dtb -j$(nproc)
+      - name: 生成 SELinux 头文件
+        run: |
+          make scripts/selinux/genheaders/
+          ./scripts/selinux/genheaders/genheaders security/selinux/flask.h security/selinux/av_permissions.h
 
-- name: 获取当前日期
-...
-    # 打包 ZIP (核心修复：确保 META-INF 在根目录)
-    cd AnyKernel3
-    zip -r9 ../unsigned.zip . -x ".git*"
-    cd ..
+      - name: 编译内核
+        run: |
+          make Image.gz-dtb -j$(nproc)
+
+      - name: 获取当前日期
+        id: date
+        run: |
+          echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+
       - name: 创建可刷入 ZIP
         run: |
           # 克隆 AnyKernel3 模版
           git clone --depth=1 https://github.com/osm0sis/AnyKernel3.git AnyKernel3
           rm -rf AnyKernel3/.git
-
-          # 放入内核镜像
+          # 放入镜像
           cp arch/arm64/boot/Image.gz-dtb AnyKernel3/
-
-          # 配置 AnyKernel3 脚本 (适配 A/B 分区)
+          # 适配脚本
           sed -i 's/do.devicecheck=1/do.devicecheck=1/' AnyKernel3/anykernel.sh
           sed -i 's/device.name1=maguro/device.name1=apollo/' AnyKernel3/anykernel.sh
           sed -i 's/device.name2=toro/device.name2=apollon/' AnyKernel3/anykernel.sh
-          sed -i 's/device.name3=toroplus/device.name3=Mi 10T/' AnyKernel3/anykernel.sh
-          sed -i 's/device.name4=/device.name4=K30S Ultra/' AnyKernel3/anykernel.sh
           sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=auto|' AnyKernel3/anykernel.sh
           sed -i 's/is_slot_device=0/is_slot_device=auto/' AnyKernel3/anykernel.sh
-
-          # 强制赋予最高兼容性权限
+          # 权限
           chmod -R 755 AnyKernel3/
-          
-          # 验证 META-INF 路径 (防止 recovery 找不到 update-binary)
-          ls -R AnyKernel3/META-INF
-
-          # 打包 ZIP
+          # 打包 ZIP (核心修复：确保 META-INF 在根目录)
           cd AnyKernel3
           zip -r9 ../unsigned.zip . -x ".git*"
           cd ..
 
       - name: 签名 ZIP (解决签名验证失败)
         run: |
-          # 下载 AOSP 测试密钥
           wget -q https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.pk8 -O testkey.pk8
           wget -q https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.x509.pem -O testkey.x509.pem
-          
-          # 检查文件
-          ls -l unsigned.zip testkey.pk8 testkey.x509.pem
-          
-          # 尝试使用系统 apksigner 签名 (使用 java -jar 绕过可能的脚本格式问题)
-          if [ -f /usr/share/java/apksigner.jar ]; then
-            echo "Using system apksigner.jar..."
-            java -jar /usr/share/java/apksigner.jar sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip
-          else
-            echo "System apksigner.jar not found, falling back to zipsigner.jar..."
-            wget -q https://github.com/shakalaca/Zipsigner-CLI/raw/master/out/artifacts/zipsigner_jar/zipsigner.jar -O zipsigner.jar
-            java -jar zipsigner.jar unsigned.zip Kernel-apollo-${{ steps.date.outputs.date }}.zip
-          fi
-          
+          java -jar /usr/share/java/apksigner.jar sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip
           echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
 
       - name: 上传编译产物
@@ -129,24 +106,15 @@ jobs:
           path: ${{ env.ZIP_NAME }}
           retention-days: 7
 
-      - name: 发送 Telegram 成功通知
-        if: success()
+      - name: 发送 Telegram 通知
+        if: always()
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          STATUS="${{ job.status }}"
+          if [ "$STATUS" = "success" ]; then ICON="✅"; else ICON="❌"; fi
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
-            -d "text=✅ Build Success!%0A%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Workflow:* [${{ github.workflow }}](${{ github.run_url }})" \
-            -d "parse_mode=Markdown"
-
-      - name: 发送 Telegram 失败通知
-        if: failure()
-        env:
-          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-        run: |
-          curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
-            -d "chat_id=${TELEGRAM_CHAT_ID}" \
-            -d "text=❌ Build Failed!%0A%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Workflow:* [${{ github.workflow }}](${{ github.run_url }})" \
+            -d "text=$ICON Build $STATUS!%0A%0A*Branch:* `${{ github.ref_name }}`%0A*Commit:* `${{ github.sha }}`%0A*Workflow:* [${{ github.workflow }}](${{ github.run_url }})" \
             -d "parse_mode=Markdown"
