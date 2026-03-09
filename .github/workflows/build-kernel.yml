@@ -62,6 +62,12 @@ jobs:
         run: |
           make Image.gz-dtb -j$(nproc)
 
+      - name: 获取当前日期
+        id: date
+        run: |
+          echo "date=$(date +'%Y%m%d')" >> $GITHUB_OUTPUT
+          echo "full_date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+
       - name: 创建可刷入 ZIP
         run: |
           # 创建 AnyKernel3 目录结构
@@ -94,15 +100,35 @@ jobs:
 
           # 打包 ZIP
           cd AnyKernel3
-          zip -r ../LineageOS_23.2_kernel.zip *
+          zip -r ../Kernel-apollo-${{ steps.date.outputs.date }}.zip *
           cd ..
+          echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
 
       - name: 上传编译产物
         uses: actions/upload-artifact@v4
         with:
           name: kernel-zip
-          path: LineageOS_23.2_kernel.zip
+          path: ${{ env.ZIP_NAME }}
           retention-days: 7
+
+      - name: 发布 Release
+        uses: softprops/action-gh-release@v2
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/heads/')
+        with:
+          tag_name: build-apollo-${{ steps.date.outputs.date }}-${{ github.run_number }}
+          name: Apollo 内核更新 - ${{ steps.date.outputs.full_date }}
+          files: ${{ env.ZIP_NAME }}
+          body: |
+            ## Apollo (Xiaomi Mi 10T / K30S Ultra) 内核构建
+            
+            - **构建日期:** ${{ steps.date.outputs.full_date }}
+            - **分支:** `${{ github.ref_name }}`
+            - **提交哈希:** `${{ github.sha }}`
+            - **工作流链接:** [点击查看](${{ github.run_url }})
+            
+            此构建由 GitHub Actions 自动生成。
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 发送 Telegram 成功通知
         if: success()
