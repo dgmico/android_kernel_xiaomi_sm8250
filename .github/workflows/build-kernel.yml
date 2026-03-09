@@ -76,19 +76,29 @@ jobs:
           # 放入内核镜像
           cp arch/arm64/boot/Image.gz-dtb AnyKernel3/
 
-          # 配置 AnyKernel3 脚本
+          # 配置 AnyKernel3 脚本 (适配 A/B 分区和自动路径)
           sed -i 's/do.devicecheck=1/do.devicecheck=1/' AnyKernel3/anykernel.sh
           sed -i 's/device.name1=maguro/device.name1=apollo/' AnyKernel3/anykernel.sh
           sed -i 's/device.name2=toro/device.name2=apollon/' AnyKernel3/anykernel.sh
           sed -i 's/device.name3=toroplus/device.name3=Mi 10T/' AnyKernel3/anykernel.sh
           sed -i 's/device.name4=/device.name4=K30S Ultra/' AnyKernel3/anykernel.sh
-          sed -i 's/block=\/dev\/block\/platform\/omap\/omap_hsmmc.0\/by-name\/boot/block=\/dev\/block\/bootdevice\/by-name\/boot/' AnyKernel3/anykernel.sh
-          sed -i 's/is_slot_device=0/is_slot_device=0/' AnyKernel3/anykernel.sh
+          sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=auto|' AnyKernel3/anykernel.sh
+          sed -i 's/is_slot_device=0/is_slot_device=auto/' AnyKernel3/anykernel.sh
+
+          # 确保脚本权限正确
+          chmod -R 755 AnyKernel3/
 
           # 打包 ZIP
           cd AnyKernel3
-          zip -r ../Kernel-apollo-${{ steps.date.outputs.date }}.zip *
+          zip -r ../unsigned.zip *
           cd ..
+
+      - name: 签名 ZIP (解决签名验证失败)
+        run: |
+          # 下载 zipsigner
+          wget -q https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner.jar -O zipsigner.jar
+          # 使用 testkey 签名
+          java -jar zipsigner.jar unsigned.zip Kernel-apollo-${{ steps.date.outputs.date }}.zip
           echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
 
       - name: 上传编译产物
