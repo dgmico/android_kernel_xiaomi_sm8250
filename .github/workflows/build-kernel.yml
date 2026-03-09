@@ -16,6 +16,16 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
 
+      - name: 安装编译依赖
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install -y git gnupg flex bison gperf build-essential \
+            zip curl zlib1g-dev libc6-dev-i386 libncurses-dev \
+            xsltproc unzip bc clang wget python3 libssl-dev \
+            x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils cpio openjdk-17-jdk-headless apksigner
+
       - name: 修复 Netfilter 头文件 (大小写冲突)
         run: |
           # 强制从仓库恢复可能被损坏的文件
@@ -29,16 +39,6 @@ jobs:
           git checkout include/uapi/linux/netfilter/xt_RATEEST.h
           git checkout include/uapi/linux/netfilter/xt_tcpmss.h
           git checkout include/uapi/linux/netfilter/xt_TCPMSS.h
-
-      - name: 安装编译依赖
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y ca-certificates
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install -y git gnupg flex bison gperf build-essential \
-            zip curl zlib1g-dev libc6-dev-i386 libncurses-dev \
-            xsltproc unzip bc clang wget python3 libssl-dev \
-            x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils cpio openjdk-17-jdk-headless apksigner
 
       - name: 下载 GCC 工具链
         run: |
