@@ -24,7 +24,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y git gnupg flex bison gperf build-essential \
             zip curl zlib1g-dev libc6-dev-i386 libncurses-dev \
             xsltproc unzip bc clang wget python3 libssl-dev \
-            x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils cpio cpio
+            x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils cpio openjdk-17-jdk-headless
 
       - name: 下载 GCC 工具链
         run: |
@@ -96,7 +96,9 @@ jobs:
       - name: 签名 ZIP (解决签名验证失败)
         run: |
           # 下载 zipsigner
-          wget -q https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner.jar -O zipsigner.jar
+          wget https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner.jar -O zipsigner.jar
+          # 检查文件
+          ls -l unsigned.zip zipsigner.jar
           # 使用 testkey 签名
           java -jar zipsigner.jar unsigned.zip Kernel-apollo-${{ steps.date.outputs.date }}.zip
           echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
