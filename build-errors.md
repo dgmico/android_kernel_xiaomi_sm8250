@@ -350,7 +350,7 @@
 **原因**: `SECCOMP_ARCH_NATIVE_NR` 是较新版本内核引入的宏，在 4.19 内核中不存在。
 
 **修复**: 
-1. 在 `drivers/kernelsu/seccomp_cache.c` 中为 `SECCOMP_ARCH_NATIVE_NR` 提供回退 definition，默认使用 `NR_syscalls`。
+1. 在 `drivers/kernelsu/seccomp_cache.c` 中为 `SECCOMP_ARCH_NATIVE_NR` 提供回推 definition，默认使用 `NR_syscalls`。
 
 **修改文件**:
 - `drivers/kernelsu/seccomp_cache.c` - 添加兼容性宏定义
@@ -733,7 +733,7 @@
 - `ksu_...` 未定义 (KernelSU SELinux rules)
 
 **原因**: 
-1. `rcu_trace_lock_map` 在开启 `CONFIG_DEBUG_LOCK_ALLOC` 时缺少变量定义。
+1. `rcu_trace_lock_map` 在开启 `CONFIG_DEBUG_LOCK_ALLOC` 时缺失变量定义。
 2. Android Vendor Hooks 虽然在源码中，但配置未开启，导致相关符号无法导出。
 3. `path_mount` 和 `path_umount` 是 Linux 5.x 的 API，在 4.19 中不存在。
 4. `drivers/kernelsu/selinux/sepolicy.c` 包含的是空 stub，导致 `rules.c` 调用时链接失败。
@@ -774,9 +774,9 @@
 - `include/uapi/linux/netfilter/xt_tcpmss.h` (Index only)
 - `include/uapi/linux/netfilter/xt_TCPMSS.h` (Index only)
 - `include/uapi/linux/netfilter/xt_dscp.h` (Index only)
-- `include/uapi/linux/netfilter/xt_DSCP.h` (Index only)
-- `include/uapi/linux/netfilter/xt_rateest.h` (Index only)
-- `include/uapi/linux/netfilter/xt_RATEEST.h` (Index only)
+- `include/uapi/linux/netfilter/xt_DSCP.h" (Index only)
+- `include/uapi/linux/netfilter/xt_rateest.h" (Index only)
+- `include/uapi/linux/netfilter/xt_RATEEST.h" (Index only)
 
 ---
 
@@ -836,3 +836,19 @@
 
 **修改文件**:
 - `drivers/kernelsu/selinux/sepolicy.c` - 替换为 4.19 兼容的完整 Stub 实现。
+
+---
+
+## 2026-03-09 13:25 - Run 22836743704
+
+**错误**: `zipsigner.jar` 下载 404 错误。
+
+**原因**: `Magisk-Modules-Repo/zipsigner` 仓库中的原始下载链接已失效。
+
+**修复**: 
+1. 迁移签名方案：由 `zipsigner.jar` 切换为 Android 官方 `apksigner`。
+2. 在工作流中增加 `apksigner` 依赖安装。
+3. 从 `aosp-mirror` 下载 AOSP 公开的 `testkey.pk8` 和 `testkey.x509.pem` 进行签名。
+
+**修改文件**:
+- `.github/workflows/build-kernel.yml` - 替换签名逻辑为 apksigner。

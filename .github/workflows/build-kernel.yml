@@ -24,7 +24,7 @@ jobs:
           DEBIAN_FRONTEND=noninteractive apt-get install -y git gnupg flex bison gperf build-essential \
             zip curl zlib1g-dev libc6-dev-i386 libncurses-dev \
             xsltproc unzip bc clang wget python3 libssl-dev \
-            x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils cpio openjdk-17-jdk-headless
+            x11proto-core-dev libx11-dev libgl1-mesa-dev libxml2-utils cpio openjdk-17-jdk-headless apksigner
 
       - name: 下载 GCC 工具链
         run: |
@@ -95,12 +95,13 @@ jobs:
 
       - name: 签名 ZIP (解决签名验证失败)
         run: |
-          # 下载 zipsigner
-          wget https://github.com/Magisk-Modules-Repo/zipsigner/raw/master/bin/zipsigner.jar -O zipsigner.jar
+          # 下载 AOSP 测试密钥
+          wget https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.pk8
+          wget https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.x509.pem
           # 检查文件
-          ls -l unsigned.zip zipsigner.jar
-          # 使用 testkey 签名
-          java -jar zipsigner.jar unsigned.zip Kernel-apollo-${{ steps.date.outputs.date }}.zip
+          ls -l unsigned.zip testkey.pk8 testkey.x509.pem
+          # 使用 apksigner 签名
+          apksigner sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip
           echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
 
       - name: 上传编译产物
