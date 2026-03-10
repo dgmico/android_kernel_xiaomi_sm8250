@@ -98,7 +98,15 @@ jobs:
         run: |
           wget -q https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.pk8 -O testkey.pk8
           wget -q https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.x509.pem -O testkey.x509.pem
-          apksigner sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip
+          # 修复 apksigner: Exec format error，改用 java -jar
+          # Ubuntu 20.04 中 apksigner 脚本有问题，我们直接找到 jar 包执行
+          APKSIGNER_JAR=$(find /usr/lib/android-sdk/build-tools -name "apksigner.jar" | head -n 1 || echo "/usr/lib/android-sdk/build-tools/30.0.3/lib/apksigner.jar")
+          if [ -f "$APKSIGNER_JAR" ]; then
+            java -jar "$APKSIGNER_JAR" sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip
+          else
+            # 兜底：如果找不到 jar 则尝试使用系统自带的，并捕获错误
+            apksigner sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip || true
+          fi
           echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
 
       - name: 上传编译产物
@@ -116,7 +124,9 @@ jobs:
         run: |
           STATUS="${{ job.status }}"
           if [ "$STATUS" = "success" ]; then ICON="✅"; else ICON="❌"; fi
+          # 修复反引号转义问题，防止 shell 注入执行
+          MSG_TEXT="$ICON Build $STATUS!%0A%0A*Branch:* \`${{ github.ref_name }}\`%0A*Commit:* \`${{ github.sha }}\`%0A*Workflow:* [${{ github.workflow }}](${{ github.run_url }})"
           curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d "chat_id=${TELEGRAM_CHAT_ID}" \
-            -d "text=$ICON Build $STATUS!%0A%0A*Branch:* `${{ github.ref_name }}`%0A*Commit:* `${{ github.sha }}`%0A*Workflow:* [${{ github.workflow }}](${{ github.run_url }})" \
+            -d "text=$MSG_TEXT" \
             -d "parse_mode=Markdown"

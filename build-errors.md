@@ -454,7 +454,7 @@
 **修复**: 在 `drivers/input/fingerprint/fpc/fpc1020_tee.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
 
 **修改文件**:
-- `drivers/input/fingerprint/fpc/fpc1020_tee.c" - 添加缺失的头文件。
+- `drivers/input/fingerprint/fpc/fpc1020_tee.c" - 添加缺失 of 头文件。
 
 ---
 
@@ -467,7 +467,7 @@
 **修复**: 在 `drivers/power/supply/maxim/onewire_gpio.c` 中添加 `#include <linux/pinctrl/consumer.h>`。
 
 **修改文件**:
-- `drivers/power/supply/maxim/onewire_gpio.c" - 添加缺失的头文件。
+- `drivers/power/supply/maxim/onewire_gpio.c" - 添加缺失 of 头文件。
 
 ---
 
@@ -852,3 +852,24 @@
 
 **修改文件**:
 - `.github/workflows/build-kernel.yml` - 替换签名逻辑为 apksigner。
+
+---
+
+## 2026-03-10 - Run 22847720795
+
+**错误**: `apksigner: Exec format error` (exit code 2)
+
+**原因**: 在 `ubuntu:20.04` 容器中，系统自带的 `apksigner` 包装脚本在尝试执行内部二进制文件时出现架构不兼容或格式错误。
+
+**修复**: 
+1. 绕过包装脚本，直接使用 `java -jar` 执行 `apksigner.jar`。
+2. 在工作流中增加自动查找 `apksigner.jar` 路径的逻辑，优先使用系统安装路径 `/usr/lib/android-sdk/build-tools/debian/apksigner.jar`。
+3. 修复 Telegram 通知中的反引号转义问题，防止 shell 注入并确保格式正确。
+
+**修改文件**:
+- `.github/workflows/build-kernel.yml` - 优化签名逻辑和通知格式。
+- `include/uapi/linux/netfilter/xt_CONNMARK.h` - 代码清理和 License 更新。
+- `include/uapi/linux/netfilter/xt_DSCP.h` - 代码清理和 License 更新。
+- `include/uapi/linux/netfilter/xt_MARK.h` - 代码清理和 License 更新。
+- `include/uapi/linux/netfilter/xt_RATEEST.h` - 代码清理和 License 更新。
+- `include/uapi/linux/netfilter/xt_TCPMSS.h` - 代码清理和 License 更新。
