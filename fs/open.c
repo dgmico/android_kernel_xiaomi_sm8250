@@ -924,7 +924,6 @@ EXPORT_SYMBOL(file_path);
  */
 int vfs_open(const struct path *path, struct file *file)
 {
-	ksu_handle_vfs_open(path, &file->f_flags);
 	file->f_path = *path;
 	return do_dentry_open(file, d_backing_inode(path->dentry), NULL);
 }

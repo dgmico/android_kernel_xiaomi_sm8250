@@ -439,7 +439,7 @@ ssize_t vfs_read(struct file *file, char __user *buf, size_t count, loff_t *pos)
 {
 	ssize_t ret;
 
-	ksu_handle_vfs_read(file, buf, count, pos);
+	ksu_handle_vfs_read(&file, &buf, &count, &pos);
 
 	if (!(file->f_mode & FMODE_READ))
 		return -EBADF;

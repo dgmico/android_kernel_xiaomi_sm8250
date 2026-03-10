@@ -44,3 +44,8 @@
 - **错误原文**: `../drivers/input/input.c:453:51: error: too many arguments to function call, expected 3, have 4`
 - **原因分析**: `ksu_handle_input_handle_event` 函数原型仅需要 3 个参数（type, code, value），但在 `input.c` 中错误地传入了 `dev` 指针。
 - **修复对策**: 移除 `input.c` 调用中的第一个参数 `dev`，使其符合函数原型声明。
+
+## [2026-03-10 09:57] 错误诊断
+- **错误原文**: `implicit declaration of function 'ksu_handle_vfs_open'` 及 `ksu_handle_vfs_read` 参数不匹配。
+- **原因分析**: 不同版本的 KernelSU API 入口不同。当前集成的版本不包含 `vfs_open` 钩子，且 `vfs_read` / `stat` 钩子要求传递指针的指针。
+- **修复对策**: 移除 `fs/open.c` 中的非法调用；修正 `fs/stat.c` 和 `fs/read_write.c` 中的函数名及参数传递方式。
