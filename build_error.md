@@ -29,3 +29,8 @@
 - **错误原文**: `error: stack frame size (2912) exceeds limit (2048) in 'sha3_256_hmac'`
 - **原因分析**: Clang 编译器检测到 sha384_software.c 中的栈帧大小超过了内核设定的 2048 字节警告阈值，且由于 -Werror 被视为错误。
 - **修复对策**: 在内核配置文件中调大 CONFIG_FRAME_WARN 阈值至 3072 或更高，以适应 LLVM 的编译特性。
+
+## [2026-03-10 08:13] 错误诊断
+- **错误原文**: `ld.lld: error: undefined symbol: ps5169_cfg_usb`
+- **原因分析**: `dwc3-msm.c` 调用了 `ps5169_cfg_usb()`，但该函数定义在 `ps5169.c` 中，且仅在 `CONFIG_PS5169` 启用时才编译。
+- **修复对策**: 在 `ps5169.h` 中增加条件宏判断，若未定义 `CONFIG_PS5169` 则提供空函数实现。同时优化了 GitHub Actions 工作流，增加缓存和改进通知。
