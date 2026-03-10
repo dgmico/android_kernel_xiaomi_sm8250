@@ -24,3 +24,8 @@
 - **错误原文**: `../kernel/gen_kheaders.sh: line 61: cpio: command not found`
 - **原因分析**: 容器环境缺少 cpio 工具，导致内核头文件生成失败。
 - **修复对策**: 在工作流的安装依赖步骤中添加 cpio 软件包。
+
+## [2026-03-10 07:34] 错误诊断
+- **错误原文**: `error: stack frame size (2912) exceeds limit (2048) in 'sha3_256_hmac'`
+- **原因分析**: Clang 编译器检测到 sha384_software.c 中的栈帧大小超过了内核设定的 2048 字节警告阈值，且由于 -Werror 被视为错误。
+- **修复对策**: 在内核配置文件中调大 CONFIG_FRAME_WARN 阈值至 3072 或更高，以适应 LLVM 的编译特性。
