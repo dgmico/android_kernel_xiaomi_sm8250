@@ -34,3 +34,8 @@
 - **错误原文**: `ld.lld: error: undefined symbol: ps5169_cfg_usb`
 - **原因分析**: `dwc3-msm.c` 调用了 `ps5169_cfg_usb()`，但该函数定义在 `ps5169.c` 中，且仅在 `CONFIG_PS5169` 启用时才编译。
 - **修复对策**: 在 `ps5169.h` 中增加条件宏判断，若未定义 `CONFIG_PS5169` 则提供空函数实现。同时优化了 GitHub Actions 工作流，增加缓存和改进通知。
+
+## [2026-03-10 09:31] 错误诊断
+- **错误原文**: `drivers/Kconfig:238: can't open file "drivers/KernelSU/Kconfig"`
+- **原因分析**: `drivers/KernelSU` 被作为 gitlink (160000) 提交，导致 CI 检出时缺少文件。
+- **修复对策**: 移除 `drivers/KernelSU` 的 git 索引，删除其内部 `.git` 目录，并以普通目录形式重新添加所有文件。

@@ -20,7 +20,7 @@
 
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
-#include "KernelSU/ksu.h"
+#include "../drivers/KernelSU/include/ksu_hook.h"
 
 /**
  * generic_fillattr - Fill in the basic attributes from the inode struct

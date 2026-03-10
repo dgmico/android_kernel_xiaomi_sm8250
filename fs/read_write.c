@@ -24,7 +24,7 @@
 
 #include <linux/uaccess.h>
 #include <asm/unistd.h>
-#include "KernelSU/ksu.h"
+#include "../drivers/KernelSU/include/ksu_hook.h"
 
 const struct file_operations generic_ro_fops = {
 	.llseek		= generic_file_llseek,
