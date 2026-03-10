@@ -98,15 +98,12 @@ jobs:
         run: |
           wget -q https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.pk8 -O testkey.pk8
           wget -q https://github.com/aosp-mirror/platform_build/raw/master/target/product/security/testkey.x509.pem -O testkey.x509.pem
-          # 修复 apksigner: Exec format error，改用 java -jar
-          # Ubuntu 20.04 中 apksigner 脚本有问题，我们直接找到 jar 包执行
-          APKSIGNER_JAR=$(find /usr/lib/android-sdk/build-tools -name "apksigner.jar" | head -n 1 || echo "/usr/lib/android-sdk/build-tools/30.0.3/lib/apksigner.jar")
-          if [ -f "$APKSIGNER_JAR" ]; then
-            java -jar "$APKSIGNER_JAR" sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip
-          else
-            # 兜底：如果找不到 jar 则尝试使用系统自带的，并捕获错误
-            apksigner sign --key testkey.pk8 --cert testkey.x509.pem --out Kernel-apollo-${{ steps.date.outputs.date }}.zip unsigned.zip || true
-          fi
+          # 修复 apksigner: Missing AndroidManifest.xml，改用 openssl + jarsigner
+          # 刷机包不是 APK，apksigner 会强制检查 Manifest，而 jarsigner 只做 JAR 签名
+          cp unsigned.zip Kernel-apollo-${{ steps.date.outputs.date }}.zip
+          openssl pkcs8 -inform DER -in testkey.pk8 -out testkey.key -nocrypt
+          openssl pkcs12 -export -in testkey.x509.pem -inkey testkey.key -out testkey.p12 -name testkey -passout pass:android
+          jarsigner -keystore testkey.p12 -storepass android -keypass android Kernel-apollo-${{ steps.date.outputs.date }}.zip testkey
           echo "ZIP_NAME=Kernel-apollo-${{ steps.date.outputs.date }}.zip" >> $GITHUB_ENV
 
       - name: 上传编译产物

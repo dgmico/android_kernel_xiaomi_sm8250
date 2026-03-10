@@ -873,3 +873,19 @@
 - `include/uapi/linux/netfilter/xt_MARK.h` - 代码清理和 License 更新。
 - `include/uapi/linux/netfilter/xt_RATEEST.h` - 代码清理和 License 更新。
 - `include/uapi/linux/netfilter/xt_TCPMSS.h` - 代码清理和 License 更新。
+
+---
+
+## 2026-03-10 - Run 22882180153
+
+**错误**: `com.android.apksig.apk.ApkFormatException: Missing AndroidManifest.xml`
+
+**原因**: `apksigner` 工具是为 APK 设计的，强制检查 `AndroidManifest.xml`。刷机包（AnyKernel3）不是 APK，不包含此文件。
+
+**修复**: 
+1. 迁移签名方案：弃用 `apksigner`，改用通用 JAR 签名工具 `jarsigner`。
+2. 使用 `openssl` 将 AOSP 测试密钥转换为 PKCS12 格式以便 `jarsigner` 使用。
+3. `jarsigner` 只验证 ZIP/JAR 结构，不要求 Android 特有文件。
+
+**修改文件**:
+- `.github/workflows/build-kernel.yml` - 替换签名方案为 openssl + jarsigner。
