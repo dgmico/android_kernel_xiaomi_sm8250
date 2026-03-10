@@ -9,3 +9,8 @@
 - **错误原文**: `错误: 下载的文件过小，链接可能已失效。`
 - **原因分析**: Google Git 的 +archive 接口不支持直接 curl 下载大体积存档，返回了 HTML 页面。
 - **修复对策**: 改用 git clone --depth 1 获取 Clang 工具链；确保工具链路径正确。
+
+## [2026-03-10 07:14] 错误诊断
+- **错误原文**: `error: Sparse checkout leaves no entry on working directory`
+- **原因分析**: 默认 master 分支中可能不包含指定的 clang 目录，或者稀疏检出语法在当前 git 版本下不兼容。
+- **修复对策**: 尝试直接克隆包含该 clang 版本的特定分支 (master-kernel-build-2022)。

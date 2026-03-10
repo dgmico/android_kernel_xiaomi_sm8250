@@ -32,27 +32,21 @@ jobs:
 
       - name: 获取 AOSP Clang 工具链
         run: |
-          # 放弃不稳定且受限的 curl +archive 下载，改用 git 浅克隆
-          # 我们只需要获取特定版本的 Clang
-          # 注意：由于 prebuilts 库极大，我们只检出特定的子目录
-          mkdir -p toolchain
-          cd toolchain
-          git init
-          git remote add origin https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86
-          # 启用 Sparse Checkout 以仅获取特定的 Clang 版本目录 (r450784d)
-          git config core.sparseCheckout true
-          echo "clang-r450784d/*" > .git/info/sparse-checkout
-          git pull --depth 1 origin master
-          # 将其移动到顶层以便后续路径引用更简单
-          mv clang-r450784d/* .
-          rm -rf clang-r450784d
+          # 放弃 Sparse Checkout，直接克隆包含目标 Clang 版本的特定分支
+          git clone --depth 1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 -b master-kernel-build-2022 toolchain
+          # 验证目标 Clang 目录是否存在
+          if [ ! -d "toolchain/clang-r450784d" ]; then
+             echo "错误: 在分支 master-kernel-build-2022 中未找到 clang-r450784d。"
+             ls -F toolchain/
+             exit 1
+          fi
 
       - name: 设置编译环境变量 (LineageOS 23.2 / Android 16)
         run: |
           echo "ARCH=arm64" >> $GITHUB_ENV
           echo "SUBARCH=arm64" >> $GITHUB_ENV
-          # 指向解压后的 clang/bin
-          echo "PATH=$(pwd)/toolchain/bin:$PATH" >> $GITHUB_ENV
+          # 路径必须指向具体的 bin 目录
+          echo "PATH=$(pwd)/toolchain/clang-r450784d/bin:$PATH" >> $GITHUB_ENV
           echo "CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV
           echo "CC=clang" >> $GITHUB_ENV
           echo "BASE_DEFCONFIG=vendor/kona-perf_defconfig" >> $GITHUB_ENV
