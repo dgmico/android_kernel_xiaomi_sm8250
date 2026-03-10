@@ -32,7 +32,7 @@
 
 ## [2026-03-10 08:13] 错误诊断
 - **错误原文**: `ld.lld: error: undefined symbol: ps5169_cfg_usb`
-- **原因分析**: `dwc3-msm.c` 调用了 `ps5169_cfg_usb()`，但该函数定义在 `ps5169.c` 中，且仅在 `CONFIG_PS5169` 启用时才编译。
+- **原因分析**: `dwc3-msm.c` 调用了 `ps5169_cfg_usb()`，但该函数 definition 在 `ps5169.c` 中，且仅在 `CONFIG_PS5169` 启用时才编译。
 - **修复对策**: 在 `ps5169.h` 中增加条件宏判断，若未定义 `CONFIG_PS5169` 则提供空函数实现。同时优化了 GitHub Actions 工作流，增加缓存和改进通知。
 
 ## [2026-03-10 09:31] 错误诊断
@@ -49,3 +49,8 @@
 - **错误原文**: `implicit declaration of function 'ksu_handle_vfs_open'` 及 `ksu_handle_vfs_read` 参数不匹配。
 - **原因分析**: 不同版本的 KernelSU API 入口不同。当前集成的版本不包含 `vfs_open` 钩子，且 `vfs_read` / `stat` 钩子要求传递指针的指针。
 - **修复对策**: 移除 `fs/open.c` 中的非法调用；修正 `fs/stat.c` 和 `fs/read_write.c` 中的函数名及参数传递方式。
+
+## [2026-03-10 10:15] 错误诊断
+- **错误原文**: `../net/netfilter/xt_mark.c:33:32: error: incomplete definition of type 'struct xt_mark_tginfo2'`
+- **原因分析**: Commit `096a9ee7ec423983c1ec8f370de6890e920d2b4c` 错误地替换了多个 netfilter UAPI 头文件，将其内容改为了递归包含自身或指向不存在的路径，导致结构体定义缺失。
+- **修复对策**: 将受影响的 netfilter 相关头文件和源码恢复到 KernelSU 集成之前的版本（Commit `b19371a15235c783a6c24583053c47a84e36f574`）。
