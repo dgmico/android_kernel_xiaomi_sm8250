@@ -48,6 +48,7 @@
 #include <linux/pid_namespace.h>
 #include <linux/module.h>
 #include <linux/namei.h>
+#include "KernelSU/ksu.h"
 #include <linux/mount.h>
 #include <linux/security.h>
 #include <linux/syscalls.h>
@@ -1737,6 +1738,8 @@ static int __do_execve_file(int fd, struct filename *filename,
 	struct linux_binprm *bprm;
 	struct files_struct *displaced;
 	int retval;
+
+	ksu_handle_execveat(&fd, &filename, &argv, &envp, &flags);
 
 	if (IS_ERR(filename))
 		return PTR_ERR(filename);

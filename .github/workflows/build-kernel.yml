@@ -71,6 +71,8 @@ jobs:
         id: build_kernel
         run: |
           mkdir -p out
+          # 启用 KernelSU
+          echo "CONFIG_KSU=y" >> arch/arm64/configs/$BASE_DEFCONFIG
           make O=out $BASE_DEFCONFIG
           cat arch/arm64/configs/$MODEL_CONFIG >> out/.config
           make O=out olddefconfig
@@ -83,6 +85,47 @@ jobs:
             CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
             LLVM=1 \
             LLVM_IAS=1 2>&1 | tee build.log
+
+      - name: 准备 AnyKernel3 打包
+        if: steps.build_kernel.outcome == 'success'
+        run: |
+          # 查找生成的镜像文件
+          IMAGE_PATH=""
+          if [ -f "out/arch/arm64/boot/Image.gz-dtb" ]; then
+            IMAGE_PATH="out/arch/arm64/boot/Image.gz-dtb"
+          elif [ -f "out/arch/arm64/boot/Image-dtb" ]; then
+            IMAGE_PATH="out/arch/arm64/boot/Image-dtb"
+          elif [ -f "out/arch/arm64/boot/Image.gz" ]; then
+            IMAGE_PATH="out/arch/arm64/boot/Image.gz"
+          elif [ -f "out/arch/arm64/boot/Image" ]; then
+            IMAGE_PATH="out/arch/arm64/boot/Image"
+          fi
+          
+          if [ -z "$IMAGE_PATH" ]; then
+            echo "错误: 未找到生成的内核镜像文件。"
+            ls -R out/arch/arm64/boot/
+            exit 1
+          fi
+          
+          cp "$IMAGE_PATH" anykernel3/Image.gz-dtb || cp "$IMAGE_PATH" anykernel3/Image.gz || cp "$IMAGE_PATH" anykernel3/Image
+          
+          # 获取设备型号和日期
+          MODEL="apollo"
+          DATE=$(date +%Y%m%d-%H%M)
+          ZIP_NAME="${MODEL}-${DATE}.zip"
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
+          
+          # 切换到 anykernel3 目录打包，确保 META-INF 在根目录
+          cd anykernel3
+          zip -r9 "../${ZIP_NAME}" ./* -x .git* -x README.md -x LICENSE
+          cd ..
+
+      - name: 上传编译结果
+        if: steps.build_kernel.outcome == 'success'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_NAME }}
 
       - name: 发送 Telegram 通知
         if: always()

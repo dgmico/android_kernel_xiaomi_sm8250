@@ -28,6 +28,7 @@
 #include <linux/audit.h>
 #include <linux/falloc.h>
 #include <linux/fs_struct.h>
+#include "KernelSU/ksu.h"
 #include <linux/ima.h>
 #include <linux/dnotify.h>
 #include <linux/compat.h>
@@ -923,6 +924,7 @@ EXPORT_SYMBOL(file_path);
  */
 int vfs_open(const struct path *path, struct file *file)
 {
+	ksu_handle_vfs_open(path, &file->f_flags);
 	file->f_path = *path;
 	return do_dentry_open(file, d_backing_inode(path->dentry), NULL);
 }
