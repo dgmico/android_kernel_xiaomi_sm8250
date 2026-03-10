@@ -8,8 +8,15 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
+    container:
+      image: ubuntu:20.04
     steps:
+      - name: 准备容器环境
+        run: |
+          apt update
+          apt install -y sudo curl git tar gzip
+
       - name: 检出源码
         uses: actions/checkout@v4
         with:
@@ -17,8 +24,8 @@ jobs:
 
       - name: 安装基础编译依赖
         run: |
-          sudo apt update
-          sudo apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev
+          apt update
+          DEBIAN_FRONTEND=noninteractive apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev
 
       - name: 下载 AOSP Clang 工具链
         run: |
@@ -35,7 +42,6 @@ jobs:
           echo "PATH=$(pwd)/toolchain/bin:$PATH" >> $GITHUB_ENV
           echo "CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV
           echo "CC=clang" >> $GITHUB_ENV
-          # 基础配置和机型配置
           echo "BASE_DEFCONFIG=vendor/kona-perf_defconfig" >> $GITHUB_ENV
           echo "MODEL_CONFIG=vendor/xiaomi/apollo.config" >> $GITHUB_ENV
 
@@ -43,13 +49,9 @@ jobs:
         id: build_kernel
         run: |
           mkdir -p out
-          # 1. 加载基础配置
           make O=out $BASE_DEFCONFIG
-          # 2. 合并机型配置 (apollo/apollon)
           cat arch/arm64/configs/$MODEL_CONFIG >> out/.config
-          # 3. 强制重新解析配置
           make O=out olddefconfig
-          # 4. 开始编译 (使用 LLVM=1 确保完全使用 LLVM 工具链)
           make -j$(nproc --all) O=out \
             ARCH=arm64 \
             CC=clang \
