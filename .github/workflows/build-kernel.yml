@@ -30,24 +30,28 @@ jobs:
           apt update
           DEBIAN_FRONTEND=noninteractive apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev
 
-      - name: 下载 AOSP Clang 工具链
+      - name: 获取 AOSP Clang 工具链
         run: |
+          # 放弃不稳定且受限的 curl +archive 下载，改用 git 浅克隆
+          # 我们只需要获取特定版本的 Clang
+          # 注意：由于 prebuilts 库极大，我们只检出特定的子目录
           mkdir -p toolchain
-          # 使用更可靠的下载源或通过 git 检出特定版本
-          # 为提高速度，尝试直接下载预编译二进制
-          # 如果 curl 失败，我们回退到手动下载一个较小的 prebuilt 工具链
-          curl -L -o clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master-kernel-build-2022/clang-r450784d.tar.gz
-          if [ $(stat -c%s "clang.tar.gz") -lt 10000 ]; then
-             echo "错误: 下载的文件过小，链接可能已失效。"
-             exit 1
-          fi
-          tar -C toolchain -xzf clang.tar.gz
-          rm clang.tar.gz
+          cd toolchain
+          git init
+          git remote add origin https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86
+          # 启用 Sparse Checkout 以仅获取特定的 Clang 版本目录 (r450784d)
+          git config core.sparseCheckout true
+          echo "clang-r450784d/*" > .git/info/sparse-checkout
+          git pull --depth 1 origin master
+          # 将其移动到顶层以便后续路径引用更简单
+          mv clang-r450784d/* .
+          rm -rf clang-r450784d
 
       - name: 设置编译环境变量 (LineageOS 23.2 / Android 16)
         run: |
           echo "ARCH=arm64" >> $GITHUB_ENV
           echo "SUBARCH=arm64" >> $GITHUB_ENV
+          # 指向解压后的 clang/bin
           echo "PATH=$(pwd)/toolchain/bin:$PATH" >> $GITHUB_ENV
           echo "CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV
           echo "CC=clang" >> $GITHUB_ENV
@@ -77,7 +81,6 @@ jobs:
           BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
-          # 显式使用 bash 比较
           STATUS="${{ steps.build_kernel.outcome }}"
           if [[ "$STATUS" == "success" ]]; then
             RESULT_TEXT="✅ 编译成功！(Xiaomi K30S Ultra - Android 16)"
