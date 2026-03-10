@@ -14,3 +14,8 @@
 - **错误原文**: `error: Sparse checkout leaves no entry on working directory`
 - **原因分析**: 默认 master 分支中可能不包含指定的 clang 目录，或者稀疏检出语法在当前 git 版本下不兼容。
 - **修复对策**: 尝试直接克隆包含该 clang 版本的特定分支 (master-kernel-build-2022)。
+
+## [2026-03-10 07:16] 错误诊断
+- **错误原文**: `错误: 在分支 master-kernel-build-2022 中未找到 clang-r450784d。`
+- **原因分析**: 指定版本不存在，但存在其后续版本 clang-r450784e。
+- **修复对策**: 将 Clang 版本号更新为该分支中实际存在的 clang-r450784e。
