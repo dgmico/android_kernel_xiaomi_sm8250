@@ -1,0 +1,81 @@
+name: 编译内核 (Xiaomi K30S Ultra - apollo)
+
+on:
+  push:
+    branches:
+      - ubuntu-env
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: 安装基础编译依赖
+        run: |
+          sudo apt update
+          sudo apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev
+
+      - name: 下载 AOSP Clang 工具链
+        run: |
+          mkdir -p toolchain
+          # 获取 AOSP Clang r450784d (针对 sm8250 优化的稳定版本)
+          curl -LO https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r450784d.tar.gz
+          tar -C toolchain -xzf clang-r450784d.tar.gz
+          rm clang-r450784d.tar.gz
+
+      - name: 设置编译环境变量 (LineageOS 23.2 / Android 16)
+        run: |
+          echo "ARCH=arm64" >> $GITHUB_ENV
+          echo "SUBARCH=arm64" >> $GITHUB_ENV
+          echo "PATH=$(pwd)/toolchain/bin:$PATH" >> $GITHUB_ENV
+          echo "CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV
+          echo "CC=clang" >> $GITHUB_ENV
+          # 基础配置和机型配置
+          echo "BASE_DEFCONFIG=vendor/kona-perf_defconfig" >> $GITHUB_ENV
+          echo "MODEL_CONFIG=vendor/xiaomi/apollo.config" >> $GITHUB_ENV
+
+      - name: 执行内核编译
+        id: build_kernel
+        run: |
+          mkdir -p out
+          # 1. 加载基础配置
+          make O=out $BASE_DEFCONFIG
+          # 2. 合并机型配置 (apollo/apollon)
+          cat arch/arm64/configs/$MODEL_CONFIG >> out/.config
+          # 3. 强制重新解析配置
+          make O=out olddefconfig
+          # 4. 开始编译 (使用 LLVM=1 确保完全使用 LLVM 工具链)
+          make -j$(nproc --all) O=out \
+            ARCH=arm64 \
+            CC=clang \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+            LLVM=1 \
+            LLVM_IAS=1
+        continue-on-error: true
+
+      - name: 发送 Telegram 通知
+        if: always()
+        env:
+          BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          STATUS="${{ steps.build_kernel.outcome }}"
+          if [ "$STATUS" == "success" ]; then
+            RESULT_TEXT="✅ 编译成功！(Xiaomi K30S Ultra - Android 16)"
+          else
+            RESULT_TEXT="❌ 编译失败。(Xiaomi K30S Ultra - Android 16)"
+          fi
+          
+          MESSAGE="<b>项目:</b> ${GITHUB_REPOSITORY}\n<b>分支:</b> ${GITHUB_REF_NAME}\n<b>状态:</b> ${RESULT_TEXT}\n<b>提交信息:</b> ${GITHUB_SHA::8}"
+          
+          curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
+            -d chat_id="${CHAT_ID}" \
+            -d text="${MESSAGE}" \
+            -d parse_mode="HTML"
