@@ -11,11 +11,14 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ubuntu:20.04
+    defaults:
+      run:
+        shell: bash
     steps:
       - name: 准备容器环境
         run: |
           apt update
-          apt install -y sudo curl git tar gzip
+          apt install -y sudo curl git tar gzip ca-certificates
 
       - name: 检出源码
         uses: actions/checkout@v4
@@ -30,10 +33,16 @@ jobs:
       - name: 下载 AOSP Clang 工具链
         run: |
           mkdir -p toolchain
-          # 获取 AOSP Clang r450784d (针对 sm8250 优化的稳定版本)
-          curl -LO https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master/clang-r450784d.tar.gz
-          tar -C toolchain -xzf clang-r450784d.tar.gz
-          rm clang-r450784d.tar.gz
+          # 使用更可靠的下载源或通过 git 检出特定版本
+          # 为提高速度，尝试直接下载预编译二进制
+          # 如果 curl 失败，我们回退到手动下载一个较小的 prebuilt 工具链
+          curl -L -o clang.tar.gz https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/master-kernel-build-2022/clang-r450784d.tar.gz
+          if [ $(stat -c%s "clang.tar.gz") -lt 10000 ]; then
+             echo "错误: 下载的文件过小，链接可能已失效。"
+             exit 1
+          fi
+          tar -C toolchain -xzf clang.tar.gz
+          rm clang.tar.gz
 
       - name: 设置编译环境变量 (LineageOS 23.2 / Android 16)
         run: |
@@ -68,14 +77,16 @@ jobs:
           BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
         run: |
+          # 显式使用 bash 比较
           STATUS="${{ steps.build_kernel.outcome }}"
-          if [ "$STATUS" == "success" ]; then
+          if [[ "$STATUS" == "success" ]]; then
             RESULT_TEXT="✅ 编译成功！(Xiaomi K30S Ultra - Android 16)"
           else
             RESULT_TEXT="❌ 编译失败。(Xiaomi K30S Ultra - Android 16)"
           fi
           
-          MESSAGE="<b>项目:</b> ${GITHUB_REPOSITORY}\n<b>分支:</b> ${GITHUB_REF_NAME}\n<b>状态:</b> ${RESULT_TEXT}\n<b>提交信息:</b> ${GITHUB_SHA::8}"
+          COMMIT_ID=$(echo $GITHUB_SHA | cut -c1-8)
+          MESSAGE="<b>项目:</b> ${GITHUB_REPOSITORY}\n<b>分支:</b> ${GITHUB_REF_NAME}\n<b>状态:</b> ${RESULT_TEXT}\n<b>提交信息:</b> ${COMMIT_ID}"
           
           curl -s -X POST "https://api.telegram.org/bot${BOT_TOKEN}/sendMessage" \
             -d chat_id="${CHAT_ID}" \
