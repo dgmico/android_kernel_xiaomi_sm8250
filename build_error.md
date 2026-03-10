@@ -39,3 +39,8 @@
 - **错误原文**: `drivers/Kconfig:238: can't open file "drivers/KernelSU/Kconfig"`
 - **原因分析**: `drivers/KernelSU` 被作为 gitlink (160000) 提交，导致 CI 检出时缺少文件。
 - **修复对策**: 移除 `drivers/KernelSU` 的 git 索引，删除其内部 `.git` 目录，并以普通目录形式重新添加所有文件。
+
+## [2026-03-10 09:41] 错误诊断
+- **错误原文**: `../drivers/input/input.c:453:51: error: too many arguments to function call, expected 3, have 4`
+- **原因分析**: `ksu_handle_input_handle_event` 函数原型仅需要 3 个参数（type, code, value），但在 `input.c` 中错误地传入了 `dev` 指针。
+- **修复对策**: 移除 `input.c` 调用中的第一个参数 `dev`，使其符合函数原型声明。

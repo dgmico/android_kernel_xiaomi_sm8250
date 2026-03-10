@@ -450,7 +450,7 @@ void input_event(struct input_dev *dev,
 {
 	unsigned long flags;
 
-	ksu_handle_input_handle_event(dev, &type, &code, &value);
+	ksu_handle_input_handle_event(&type, &code, &value);
 
 	if (is_event_supported(type, dev->evbit, EV_MAX)) {
 
