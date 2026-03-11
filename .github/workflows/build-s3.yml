@@ -1,4 +1,4 @@
-name: 编译内核 (S3 Rebuild v2)
+name: 编译内核 (S3 Rebuild v3)
 
 on:
   workflow_dispatch:
@@ -42,7 +42,11 @@ jobs:
           chmod +x repack/magiskboot
           cd repack
           ./magiskboot unpack boot-stock.img
-          [ -f "../out/arch/arm64/boot/Image" ] && cp ../out/arch/arm64/boot/Image kernel || cp ../out/arch/arm64/boot/Image.gz kernel
+          if [ -f "../out/arch/arm64/boot/Image" ]; then
+            cp ../out/arch/arm64/boot/Image kernel
+          else
+            cp ../out/arch/arm64/boot/Image.gz kernel
+          fi
           ./magiskboot repack boot-stock.img boot-new.img
           cd ..
 
@@ -50,7 +54,11 @@ jobs:
         run: |
           mkdir -p flash/META-INF/com/google/android
           cp repack/boot-new.img flash/boot.img
-          [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ] && cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash/dtbo.img
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash/dtbo.img
+          fi
+
+          # 注意：在 update-binary 中，$ 必须转义为 $$ 以防止 GitHub Actions 解析
           cat > flash/META-INF/com/google/android/update-binary <<'EOF'
 #!/sbin/sh
 OUTFD=$2
@@ -60,6 +68,10 @@ dd if=/tmp/sideload/package.zip/boot.img of=/dev/block/bootdevice/by-name/boot
 [ -f "/tmp/sideload/package.zip/dtbo.img" ] && dd if=/tmp/sideload/package.zip/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
 ui_print "- Done!"
 EOF
+          
+          # 使用 sed 修复脚本中的变量引用，避开 GitHub 解析
+          sed -i 's/\${OUTFD}/\$OUTFD/g' flash/META-INF/com/google/android/update-binary
+          
           chmod +x flash/META-INF/com/google/android/update-binary
           cd flash && zip -r ../apollon-rebuild.zip *
 
