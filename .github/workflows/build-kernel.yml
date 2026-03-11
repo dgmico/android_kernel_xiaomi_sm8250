@@ -8,9 +8,7 @@ on:
     paths:
       - '.github/workflows/build-kernel.yml'
       - 'arch/arm64/configs/**'
-      - 'anykernel3/**'
 
-# 防止并发运行
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -39,51 +37,19 @@ jobs:
           apt update
           DEBIAN_FRONTEND=noninteractive apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev cpio
 
-      - name: 缓存 Clang 工具链
-        id: cache-toolchain
-        uses: actions/cache@v4
-        with:
-          path: toolchain
-          key: ${{ runner.os }}-clang-r450784e-v1
-
       - name: 获取 AOSP Clang 工具链
-        if: steps.cache-toolchain.outputs.cache-hit != 'true'
         run: |
           git clone --depth 1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 -b master-kernel-build-2022 toolchain
-
-      - name: 缓存 ccache
-        uses: actions/cache@v4
-        with:
-          path: .ccache
-          key: ${{ runner.os }}-ccache-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-ccache-
-
-      - name: 设置编译环境变量
-        run: |
-          echo "ARCH=arm64" >> $GITHUB_ENV
-          echo "SUBARCH=arm64" >> $GITHUB_ENV
-          echo "PATH=$(pwd)/toolchain/clang-r450784e/bin:$PATH" >> $GITHUB_ENV
-          echo "CLANG_TRIPLE=aarch64-linux-gnu-" >> $GITHUB_ENV
-          echo "CC=clang" >> $GITHUB_ENV
-          echo "BASE_DEFCONFIG=vendor/kona-perf_defconfig" >> $GITHUB_ENV
-          echo "MODEL_CONFIG=vendor/xiaomi/apollo.config" >> $GITHUB_ENV
-          echo "USE_CCACHE=1" >> $GITHUB_ENV
-          echo "CCACHE_DIR=$(pwd)/.ccache" >> $GITHUB_ENV
 
       - name: 执行内核编译
         id: build_kernel
         run: |
+          export PATH=$(pwd)/toolchain/clang-r450784e/bin:$PATH
           mkdir -p out
-          # 动态启用 KSU
-          if [ -f "arch/arm64/configs/$BASE_DEFCONFIG" ]; then
-            echo "CONFIG_KSU=y" >> arch/arm64/configs/$BASE_DEFCONFIG
-          fi
-          make O=out $BASE_DEFCONFIG
-          if [ -f "arch/arm64/configs/$MODEL_CONFIG" ]; then
-            cat arch/arm64/configs/$MODEL_CONFIG >> out/.config
-          fi
-          make O=out olddefconfig
+          echo "CONFIG_KSU=y" >> arch/arm64/configs/vendor/kona-perf_defconfig
+          make O=out ARCH=arm64 vendor/kona-perf_defconfig
+          cat arch/arm64/configs/vendor/xiaomi/apollo.config >> out/.config
+          make O=out ARCH=arm64 olddefconfig
           make -j$(nproc --all) O=out \
             ARCH=arm64 \
             CC="ccache clang" \
@@ -91,14 +57,12 @@ jobs:
             CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
             LLVM=1 \
-            LLVM_IAS=1 2>&1 | tee build.log
+            LLVM_IAS=1
 
-      - name: 下载并解包原厂 Boot 镜像
-        if: steps.build_kernel.outcome == 'success'
+      - name: 服务端重组镜像
         run: |
           mkdir -p repack
           curl -L "https://mico.2ec89b90ca4e5971b2c56310087c5e39.r2.cloudflarestorage.com/boot.img" -o repack/boot-stock.img
-          # 获取 Magisk v28.0 中的 x86_64 magiskboot
           curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
           unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d repack/
           mv repack/libmagiskboot.so repack/magiskboot
@@ -106,72 +70,40 @@ jobs:
           
           cd repack
           ./magiskboot unpack boot-stock.img
-          
-          # 优先使用 Image，若无则使用 Image.gz
           if [ -f "../out/arch/arm64/boot/Image" ]; then
             cp ../out/arch/arm64/boot/Image kernel
-          elif [ -f "../out/arch/arm64/boot/Image.gz" ]; then
-            cp ../out/arch/arm64/boot/Image.gz kernel
           else
-            echo "错误: 未找到内核镜像文件"
-            exit 1
+            cp ../out/arch/arm64/boot/Image.gz kernel
           fi
-          
-          # 重新打包
           ./magiskboot repack boot-stock.img boot-new.img
           cd ..
 
-      - name: 准备打包 (+8 时区时间戳)
-        if: steps.build_kernel.outcome == 'success'
+      - name: 打包刷机包
         run: |
           mkdir -p flash-zip/META-INF/com/google/android
           cp repack/boot-new.img flash-zip/boot.img
-          
           if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
             cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash-zip/dtbo.img
           fi
 
-          # 创建极简刷机脚本
           cat > flash-zip/META-INF/com/google/android/update-binary <<'EOF'
 #!/sbin/sh
 OUTFD=$2
 ui_print() { echo -e "ui_print $1\nui_print" >&${OUTFD}; }
-
-ui_print "--------------------------------------"
-ui_print "   Redmi K30S Ultra Kernel Flasher    "
-ui_print "   Device: apollon (S3 Rebuild)       "
-ui_print "   Timezone: UTC+8 (Asia/Shanghai)    "
-ui_print "--------------------------------------"
-
-# 刷入 boot.img
-ui_print "- Flashing boot.img..."
-dd if=/tmp/sideload/package.zip/boot.img of=/dev/block/bootdevice/by-name/boot 2>/dev/null || \
-dd if=$(find /sideload -name boot.img | head -n 1) of=/dev/block/bootdevice/by-name/boot
-
-# 刷入 dtbo.img
-if [ -f "/tmp/sideload/package.zip/dtbo.img" ]; then
-    ui_print "- Flashing dtbo.img..."
-    dd if=/tmp/sideload/package.zip/dtbo.img of=/dev/block/bootdevice/by-name/dtbo 2>/dev/null || \
-    dd if=$(find /sideload -name dtbo.img | head -n 1) of=/dev/block/bootdevice/by-name/dtbo
-fi
-
-ui_print "- Flash finished! Reboot to system."
+ui_print "- Flashing S3 Rebuilt Kernel..."
+dd if=/tmp/sideload/package.zip/boot.img of=/dev/block/bootdevice/by-name/boot
+[ -f "/tmp/sideload/package.zip/dtbo.img" ] && dd if=/tmp/sideload/package.zip/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
+ui_print "- Done!"
 EOF
           chmod +x flash-zip/META-INF/com/google/android/update-binary
           
-          # 设置时区并生成 ZIP 文件名
-          MODEL="apollon-s3-rebuild"
           DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
-          ZIP_NAME="${MODEL}-${DATE}.zip"
+          ZIP_NAME="apollon-rebuild-${DATE}.zip"
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
-          
-          cd flash-zip
-          zip -r9X "../${ZIP_NAME}" *
-          cd ..
+          cd flash-zip && zip -r9 "../${ZIP_NAME}" *
 
-      - name: 上传刷机包
-        if: steps.build_kernel.outcome == 'success'
+      - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ env.ZIP_NAME }}
-          path: ${{ env.ZIP_NAME }}
+          name: kernel-flashable-zip
+          path: apollon-rebuild-*.zip
