@@ -74,3 +74,7 @@
 - **错误原文**: `Error in /sideload/package.zip` (持续)
 - **原因分析**: LineageOS Recovery 的解析器可能对 ZIP 的元数据和权限有特殊要求，不匹配会导致直接报包错误。
 - **修复对策**: 1. 移除自定义 metadata；2. 使用 `zip -r9X` 排除扩展属性；3. 强制对 anykernel3 目录执行 `chmod 755`，并恢复 `/sbin/sh` Shebang。
+## [2026-03-11 07:59] 错误诊断
+- **错误原文**: `Error in /sideload/package.zip (status 1)`
+- **原因分析**: 根据 @flash_error_analysis.md，1. 强制开启 is_slot_device=1 与 A-only 系统逻辑冲突；2. 缺少 LineageOS 特有的机型代号 'apollon' 导致校验失败。
+- **修复对策**: 1. 将 is_slot_device 恢复为 auto；2. 在 anykernel.sh 中添加 device.name13=apollon 兼容机型。

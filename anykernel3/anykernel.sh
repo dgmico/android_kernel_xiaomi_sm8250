@@ -20,13 +20,14 @@ device.name9=lmi
 device.name10=psyche
 device.name11=thyme
 device.name12=umi
+device.name13=apollon
 supported.versions=
 supported.patchlevels=
 '; }
 
 # shell variables
 block=/dev/block/bootdevice/by-name/boot;
-is_slot_device=1;
+is_slot_device=auto;
 ramdisk_compression=auto;
 patch_vbmeta_flag=1;
 
