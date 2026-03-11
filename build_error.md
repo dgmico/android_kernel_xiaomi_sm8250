@@ -70,3 +70,7 @@
 - **错误原文**: `Error in /sideload/package.zip`
 - **原因分析**: 1. ZIP 结构可能不符合 LineageOS Recovery 的严格检查（缺少 metadata）；2. 脚本执行可能因路径问题在初始化阶段崩溃。
 - **修复对策**: 1. 在 ZIP 中添加 META-INF/com/android/metadata 文件；2. 将 Shebang 统一为 /bin/sh 并放宽压缩等级。
+## [2026-03-11 07:36] 错误诊断
+- **错误原文**: `Error in /sideload/package.zip` (持续)
+- **原因分析**: LineageOS Recovery 的解析器可能对 ZIP 的元数据和权限有特殊要求，不匹配会导致直接报包错误。
+- **修复对策**: 1. 移除自定义 metadata；2. 使用 `zip -r9X` 排除扩展属性；3. 强制对 anykernel3 目录执行 `chmod 755`，并恢复 `/sbin/sh` Shebang。

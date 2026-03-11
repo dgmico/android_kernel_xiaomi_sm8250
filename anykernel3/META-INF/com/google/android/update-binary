@@ -1,12 +1,9 @@
-#!/bin/sh
+#!/sbin/sh
 # AnyKernel3 Backend (DO NOT CHANGE)
 # osm0sis @ xda-developers
 
 export OUTFD=$2;
 export ZIPFILE="$3";
-
-# Ensure standard environment
-[ -e /sbin/sh ] || ln -s /bin/sh /sbin/sh 2>/dev/null;
 
 BOOTMODE=false;
 ps | grep zygote | grep -v grep >/dev/null && BOOTMODE=true;
