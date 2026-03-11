@@ -26,9 +26,9 @@ supported.patchlevels=
 
 # shell variables
 block=/dev/block/bootdevice/by-name/boot;
-is_slot_device=auto;
+is_slot_device=1;
 ramdisk_compression=auto;
-patch_vbmeta_flag=auto;
+patch_vbmeta_flag=1;
 
 ## AnyKernel methods (pre-built tools/busybox)
 # import for functions

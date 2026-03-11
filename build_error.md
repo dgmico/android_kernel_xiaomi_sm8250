@@ -62,3 +62,7 @@
 - **错误原文**: `Error: revocery: Failed to find update binary META-INF/com/google/android/update-binary` (持续)
 - **原因分析**: 1. GitHub Artifacts 会对上传文件进行二次打包，用户可能直接 sideload 了外层包装包；2. 手动 zip 命令可能在某些环境下产生了 Recovery 无法识别的索引结构。
 - **修复对策**: 修改工作流，取消手动 zip 步骤，直接将 anykernel3 目录内容作为 artifact 上传。这样从浏览器下载到的 ZIP 即是标准 flashable 结构。
+## [2026-03-11 07:03] 错误诊断
+- **错误原文**: `刷入成功但重启进入 Fastboot`
+- **原因分析**: 内核虽已刷入，但可能因未处理 AVB 校验或内核压缩格式不兼容导致启动失败 (Bootloop to Fastboot)。
+- **修复对策**: 1. 在 anykernel.sh 中强制开启 patch_vbmeta_flag；2. 优化 Image 文件的选取逻辑，优先尝试 Image.gz。
