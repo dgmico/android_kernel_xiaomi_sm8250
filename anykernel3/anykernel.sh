@@ -2,7 +2,7 @@
 # (c) 2019-2023 by osm0sis @ xda-developers
 
 properties() { '
-kernel.string=Kernel by Gemini CLI for Redmi K30S Ultra (apollon)
+kernel.string=Minimal Kernel for apollon
 do.devicecheck=1
 do.modules=0
 do.systemless=1
@@ -16,11 +16,9 @@ supported.patchlevels=
 
 # shell variables
 block=/dev/block/bootdevice/by-name/boot;
-dtbo=/dev/block/bootdevice/by-name/dtbo;
 is_slot_device=auto;
 ramdisk_compression=auto;
-patch_vbmeta_flag=1;
-# split_boot=0 (default) is better when we provide dtb/dtbo files
+patch_vbmeta_flag=0;
 
 ## AnyKernel methods (pre-built tools/busybox)
 # import for functions
@@ -29,7 +27,3 @@ patch_vbmeta_flag=1;
 ## AnyKernel install
 dump_boot;
 write_boot;
-
-## DTBO install
-# flash dtbo for SM8250 (Kona) devices
-flash_dtbo;

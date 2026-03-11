@@ -93,3 +93,7 @@
 ## [2026-03-11 09:16] 错误诊断
 - **任务目标**: 为 Redmi K30S Ultra (apollon) 提供专有编译。
 - **执行动作**: 1. 在 anykernel.sh 中清理非必要机型，仅保留 apollo/apollon；2. 更新工作流生成的 ZIP 文件名和 Artifact 名为 apollon 系列。
+## [2026-03-11 09:40] 故障隔离测试 (Smoke Test)
+- **测试目标**: 确定原生内核源码是否能正常引导。
+- **执行动作**: 1. 禁用原工作流，创建 `minimal-build.yml`；2. 移除所有 DTB/DTBO 手动注入；3. 禁用 AVB 补丁 (`patch_vbmeta_flag=0`)；4. 移除 KernelSU。
+- **预期**: 如果此包能进入系统，则问题出在后续添加的功能上；如果依然 Fastboot，则说明内核配置或源码本身存在兼容性问题。
