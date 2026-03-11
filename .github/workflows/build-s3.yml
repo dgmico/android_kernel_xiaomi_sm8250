@@ -1,4 +1,4 @@
-name: 编译内核 (S3 Rebuild v4)
+name: 编译内核 (S3 Rebuild v5)
 
 on:
   workflow_dispatch:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     steps:
       - name: 检出源码
         uses: actions/checkout@v4
@@ -42,7 +42,11 @@ jobs:
           chmod +x repack/magiskboot
           cd repack
           ./magiskboot unpack boot-stock.img
-          [ -f "../out/arch/arm64/boot/Image" ] && cp ../out/arch/arm64/boot/Image kernel || cp ../out/arch/arm64/boot/Image.gz kernel
+          if [ -f "../out/arch/arm64/boot/Image" ]; then
+            cp ../out/arch/arm64/boot/Image kernel
+          else
+            cp ../out/arch/arm64/boot/Image.gz kernel
+          fi
           ./magiskboot repack boot-stock.img boot-new.img
           cd ..
 
@@ -50,17 +54,11 @@ jobs:
         run: |
           mkdir -p flash/META-INF/com/google/android
           cp repack/boot-new.img flash/boot.img
-          [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ] && cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash/dtbo.img
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash/dtbo.img
+          fi
           
           # 使用 Base64 编码 update-binary 脚本以绕过 GitHub Actions 的 YAML 扫描
-          # 脚本内容:
-          # #!/sbin/sh
-          # ui_print() { echo -e "ui_print $1\nui_print" >&$2; }
-          # ui_print "- Flashing S3 Rebuilt Kernel..." $2
-          # dd if=/tmp/sideload/package.zip/boot.img of=/dev/block/bootdevice/by-name/boot
-          # [ -f "/tmp/sideload/package.zip/dtbo.img" ] && dd if=/tmp/sideload/package.zip/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
-          # ui_print "- Done!" $2
-          
           echo "IyEvc2Jpbi9zaAp1aV9wcmludCgpIHsgZWNobyAtZSAidWlfcHJpbnQgJDFcbnVpX3ByaW50IiA+JiQyOyB9CnVpX3ByaW50ICItIEZsYXNoaW5nIFMzIFJlYnVpbHQgS2VybmVsLi4uIiAkMgpkZCBpZj0vdG1wL3NpZGVsb2FkL3BhY2thZ2UuemlwL2Jvb3QuaW1nIG9mPS9kZXYvYmxvY2svYm9vdGRldmljZS9ieS1uYW1lL2Jvb3QKWyAtZiAiL3RtcC9zaWRlbG9hZC9wYWNrYWdlLnppcC9kdGJvLmltZyIgXSAmJiBkZCBpZj0vdG1wL3NpZGVsb2FkL3BhY2thZ2UuemlwL2R0Ym8uaW1nIG9mPS9kZXYvYmxvY2svYm9vdGRldmljZS9ieS1uYW1lL2R0Ym8KdWlfcHJpbnQgIi0gRG9uZSEiICQyCg==" | base64 -d > flash/META-INF/com/google/android/update-binary
           
           chmod +x flash/META-INF/com/google/android/update-binary
