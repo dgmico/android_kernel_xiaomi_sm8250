@@ -2,25 +2,14 @@
 # (c) 2019-2023 by osm0sis @ xda-developers
 
 properties() { '
-kernel.string=Kernel by Gemini CLI for SM8250
+kernel.string=Kernel by Gemini CLI for Redmi K30S Ultra (apollon)
 do.devicecheck=1
 do.modules=0
 do.systemless=1
 do.cleanup=1
 do.cleanuponabort=0
-device.name1=alioth
-device.name2=munch
-device.name3=apollo
-device.name4=cas
-device.name5=cmi
-device.name6=dagu
-device.name7=elish
-device.name8=enuma
-device.name9=lmi
-device.name10=psyche
-device.name11=thyme
-device.name12=umi
-device.name13=apollon
+device.name1=apollo
+device.name2=apollon
 supported.versions=
 supported.patchlevels=
 '; }

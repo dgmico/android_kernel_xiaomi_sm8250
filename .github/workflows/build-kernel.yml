@@ -124,7 +124,7 @@ jobs:
           fi
           
           # 获取设备型号和日期
-          MODEL="apollo"
+          MODEL="apollon"
           DATE=$(date +%Y%m%d-%H%M)
           ZIP_NAME="${MODEL}-${DATE}.zip"
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
@@ -139,7 +139,7 @@ jobs:
         if: steps.build_kernel.outcome == 'success'
         uses: actions/upload-artifact@v4
         with:
-          name: apollo-kernel-flashable
+          name: apollon-kernel-flashable
           path: ${{ env.ZIP_NAME }}
 
       - name: 发送 Telegram 通知

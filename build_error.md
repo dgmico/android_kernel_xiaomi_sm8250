@@ -90,3 +90,6 @@
 - **错误原文**: `刷入成功但重启进入 Fastboot (持续)`
 - **原因分析**: 机型确认为 Redmi K30S Ultra (apollon)。此前脚本未显式处理 `dtbo` 分区，且代号匹配逻辑可能跳过了关键硬件补丁。
 - **修复对策**: 1. 在 anykernel.sh 中添加 `dtbo=/dev/block/bootdevice/by-name/dtbo`；2. 在安装逻辑中显式调用 `flash_dtbo`；3. 确保所有代号 (apollo/apollon) 都在校验列表中。
+## [2026-03-11 09:16] 错误诊断
+- **任务目标**: 为 Redmi K30S Ultra (apollon) 提供专有编译。
+- **执行动作**: 1. 在 anykernel.sh 中清理非必要机型，仅保留 apollo/apollon；2. 更新工作流生成的 ZIP 文件名和 Artifact 名为 apollon 系列。
