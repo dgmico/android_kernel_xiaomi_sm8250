@@ -45,9 +45,13 @@ jobs:
           elif [ -f "out/arch/arm64/boot/Image.gz" ]; then
             cp out/arch/arm64/boot/Image.gz anykernel3/
           fi
+          # 尝试包含 DTB
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/kona-v2.dtb" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/kona-v2.dtb anykernel3/dtb
+          fi
           cd anykernel3
           # 清理一下，只留最核心的
-          rm -f dtb dtbo.img Image.gz-dtb
+          rm -f dtbo.img Image.gz-dtb
           zip -r9 "../minimal-apollon.zip" * -x .git* -x README.md -x LICENSE
           cd ..
 
