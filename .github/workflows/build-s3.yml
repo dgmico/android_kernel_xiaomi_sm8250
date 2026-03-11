@@ -1,4 +1,4 @@
-name: 编译内核 (Xiaomi K30S Ultra - apollon - S3 Rebuild)
+name: 编译内核 (S3 Rebuild v2)
 
 on:
   workflow_dispatch:
@@ -9,16 +9,14 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    container:
-      image: ubuntu:20.04
     steps:
-      - name: 准备容器环境
-        run: |
-          apt update
-          apt install -y sudo curl git tar gzip ca-certificates unzip zip bc bison build-essential ccache flex g++-multilib gcc-multilib git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev cpio
-
       - name: 检出源码
         uses: actions/checkout@v4
+
+      - name: 安装基础编译依赖
+        run: |
+          sudo apt update
+          sudo apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev cpio unzip
 
       - name: 获取 AOSP Clang 工具链
         run: |
