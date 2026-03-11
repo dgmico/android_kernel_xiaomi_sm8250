@@ -27,6 +27,7 @@ supported.patchlevels=
 
 # shell variables
 block=/dev/block/bootdevice/by-name/boot;
+dtbo=/dev/block/bootdevice/by-name/dtbo;
 is_slot_device=auto;
 ramdisk_compression=auto;
 patch_vbmeta_flag=1;
@@ -39,3 +40,7 @@ patch_vbmeta_flag=1;
 ## AnyKernel install
 dump_boot;
 write_boot;
+
+## DTBO install
+# flash dtbo for SM8250 (Kona) devices
+flash_dtbo;

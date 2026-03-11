@@ -86,3 +86,7 @@
 - **错误原文**: `刷入后依然进入 Fastboot (持续)`
 - **原因分析**: 小米 Kona (apollo) 设备在引导时需要匹配的 DTB 和 DTBO。此前工作流未收集并打包这些文件，导致引导程序无法加载硬件描述。
 - **修复对策**: 1. 在工作流中收集 kona-v2.dtb 和 apollo-sm8250-overlay.dtbo；2. 将它们分别命名为 dtb 和 dtbo.img 放入 AnyKernel3 根目录。
+## [2026-03-11 09:04] 错误诊断
+- **错误原文**: `刷入成功但重启进入 Fastboot (持续)`
+- **原因分析**: 机型确认为 Redmi K30S Ultra (apollon)。此前脚本未显式处理 `dtbo` 分区，且代号匹配逻辑可能跳过了关键硬件补丁。
+- **修复对策**: 1. 在 anykernel.sh 中添加 `dtbo=/dev/block/bootdevice/by-name/dtbo`；2. 在安装逻辑中显式调用 `flash_dtbo`；3. 确保所有代号 (apollo/apollon) 都在校验列表中。
