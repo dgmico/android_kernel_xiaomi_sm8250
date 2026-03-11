@@ -5,44 +5,26 @@ on:
   push:
     branches:
       - ubuntu-env
-    paths:
-      - '.github/workflows/build-kernel.yml'
-      - 'arch/arm64/configs/**'
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     container:
       image: ubuntu:20.04
-    defaults:
-      run:
-        shell: bash
     steps:
       - name: 准备容器环境
         run: |
           apt update
-          apt install -y sudo curl git tar gzip ca-certificates unzip zip
+          apt install -y sudo curl git tar gzip ca-certificates unzip zip bc bison build-essential ccache flex g++-multilib gcc-multilib git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev cpio
 
       - name: 检出源码
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: 安装基础编译依赖
-        run: |
-          apt update
-          DEBIAN_FRONTEND=noninteractive apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev cpio
 
       - name: 获取 AOSP Clang 工具链
         run: |
           git clone --depth 1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 -b master-kernel-build-2022 toolchain
 
       - name: 执行内核编译
-        id: build_kernel
         run: |
           export PATH=$(pwd)/toolchain/clang-r450784e/bin:$PATH
           mkdir -p out
@@ -50,14 +32,7 @@ jobs:
           make O=out ARCH=arm64 vendor/kona-perf_defconfig
           cat arch/arm64/configs/vendor/xiaomi/apollo.config >> out/.config
           make O=out ARCH=arm64 olddefconfig
-          make -j$(nproc --all) O=out \
-            ARCH=arm64 \
-            CC="ccache clang" \
-            CLANG_TRIPLE=aarch64-linux-gnu- \
-            CROSS_COMPILE=aarch64-linux-gnu- \
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-            LLVM=1 \
-            LLVM_IAS=1
+          make -j$(nproc --all) O=out ARCH=arm64 CC="ccache clang" CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1
 
       - name: 服务端重组镜像
         run: |
@@ -67,26 +42,18 @@ jobs:
           unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d repack/
           mv repack/libmagiskboot.so repack/magiskboot
           chmod +x repack/magiskboot
-          
           cd repack
           ./magiskboot unpack boot-stock.img
-          if [ -f "../out/arch/arm64/boot/Image" ]; then
-            cp ../out/arch/arm64/boot/Image kernel
-          else
-            cp ../out/arch/arm64/boot/Image.gz kernel
-          fi
+          [ -f "../out/arch/arm64/boot/Image" ] && cp ../out/arch/arm64/boot/Image kernel || cp ../out/arch/arm64/boot/Image.gz kernel
           ./magiskboot repack boot-stock.img boot-new.img
           cd ..
 
       - name: 打包刷机包
         run: |
-          mkdir -p flash-zip/META-INF/com/google/android
-          cp repack/boot-new.img flash-zip/boot.img
-          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
-            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash-zip/dtbo.img
-          fi
-
-          cat > flash-zip/META-INF/com/google/android/update-binary <<'EOF'
+          mkdir -p flash/META-INF/com/google/android
+          cp repack/boot-new.img flash/boot.img
+          [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ] && cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash/dtbo.img
+          cat > flash/META-INF/com/google/android/update-binary <<'EOF'
 #!/sbin/sh
 OUTFD=$2
 ui_print() { echo -e "ui_print $1\nui_print" >&${OUTFD}; }
@@ -95,15 +62,11 @@ dd if=/tmp/sideload/package.zip/boot.img of=/dev/block/bootdevice/by-name/boot
 [ -f "/tmp/sideload/package.zip/dtbo.img" ] && dd if=/tmp/sideload/package.zip/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
 ui_print "- Done!"
 EOF
-          chmod +x flash-zip/META-INF/com/google/android/update-binary
-          
-          DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
-          ZIP_NAME="apollon-rebuild-${DATE}.zip"
-          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
-          cd flash-zip && zip -r9 "../${ZIP_NAME}" *
+          chmod +x flash/META-INF/com/google/android/update-binary
+          cd flash && zip -r ../apollon-rebuild.zip *
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-flashable-zip
-          path: apollon-rebuild-*.zip
+          name: kernel-flashable
+          path: apollon-rebuild.zip
