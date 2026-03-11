@@ -66,3 +66,7 @@
 - **错误原文**: `刷入成功但重启进入 Fastboot`
 - **原因分析**: 内核虽已刷入，但可能因未处理 AVB 校验或内核压缩格式不兼容导致启动失败 (Bootloop to Fastboot)。
 - **修复对策**: 1. 在 anykernel.sh 中强制开启 patch_vbmeta_flag；2. 优化 Image 文件的选取逻辑，优先尝试 Image.gz。
+## [2026-03-11 07:20] 错误诊断
+- **错误原文**: `Error in /sideload/package.zip`
+- **原因分析**: 1. ZIP 结构可能不符合 LineageOS Recovery 的严格检查（缺少 metadata）；2. 脚本执行可能因路径问题在初始化阶段崩溃。
+- **修复对策**: 1. 在 ZIP 中添加 META-INF/com/android/metadata 文件；2. 将 Shebang 统一为 /bin/sh 并放宽压缩等级。
