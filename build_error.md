@@ -58,3 +58,7 @@
 - **错误原文**: `Error: revocery: Failed to find update binary META-INF/com/google/android/update-binary`
 - **原因分析**: LineageOS Recovery 等现代 Recovery 环境不再提供 `/sbin/sh`，导致以 `#!/sbin/sh` 作为 Shebang 的脚本执行失败，报错找不到文件。
 - **修复对策**: 将 `anykernel3/META-INF/com/google/android/update-binary` 的 Shebang 修改为更通用的 `#!/bin/sh`。
+## [2026-03-11 06:40] 错误诊断
+- **错误原文**: `Error: revocery: Failed to find update binary META-INF/com/google/android/update-binary` (持续)
+- **原因分析**: 1. GitHub Artifacts 会对上传文件进行二次打包，用户可能直接 sideload 了外层包装包；2. 手动 zip 命令可能在某些环境下产生了 Recovery 无法识别的索引结构。
+- **修复对策**: 修改工作流，取消手动 zip 步骤，直接将 anykernel3 目录内容作为 artifact 上传。这样从浏览器下载到的 ZIP 即是标准 flashable 结构。
