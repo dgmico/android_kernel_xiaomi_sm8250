@@ -78,3 +78,7 @@
 - **错误原文**: `Error in /sideload/package.zip (status 1)`
 - **原因分析**: 根据 @flash_error_analysis.md，1. 强制开启 is_slot_device=1 与 A-only 系统逻辑冲突；2. 缺少 LineageOS 特有的机型代号 'apollon' 导致校验失败。
 - **修复对策**: 1. 将 is_slot_device 恢复为 auto；2. 在 anykernel.sh 中添加 device.name13=apollon 兼容机型。
+## [2026-03-11 08:31] 错误诊断
+- **错误原文**: `刷入 Status 1 修复后，重启依然进入 Fastboot`
+- **原因分析**: 1. 内核解压失败或格式不兼容；2. AVB 校验在当前 Recovery 下未被完全绕过；3. 缺少关键驱动配置。
+- **修复对策**: 1. 在工作流中强制优先选取未压缩的 `Image` 镜像；2. 优化 anykernel.sh 的变量设置。
