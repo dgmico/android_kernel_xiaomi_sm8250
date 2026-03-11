@@ -110,6 +110,19 @@ jobs:
           IMAGE_FILE=$(basename "$IMAGE_PATH")
           cp "$IMAGE_PATH" "anykernel3/$IMAGE_FILE"
           
+          # 收集 DTB 并合并 (AnyKernel3 常用做法)
+          # 对于 Kona, 通常是 kona-v2.dtb
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/kona-v2.dtb" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/kona-v2.dtb anykernel3/dtb
+          elif [ -f "out/arch/arm64/boot/dts/vendor/qcom/kona.dtb" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/kona.dtb anykernel3/dtb
+          fi
+
+          # 收集 DTBO
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo anykernel3/dtbo.img
+          fi
+          
           # 获取设备型号和日期
           MODEL="apollo"
           DATE=$(date +%Y%m%d-%H%M)

@@ -30,7 +30,7 @@ block=/dev/block/bootdevice/by-name/boot;
 is_slot_device=auto;
 ramdisk_compression=auto;
 patch_vbmeta_flag=1;
-split_boot=1;
+# split_boot=0 (default) is better when we provide dtb/dtbo files
 
 ## AnyKernel methods (pre-built tools/busybox)
 # import for functions
