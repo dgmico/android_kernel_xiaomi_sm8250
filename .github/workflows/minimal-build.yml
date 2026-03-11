@@ -33,9 +33,9 @@ jobs:
         run: |
           export PATH=$(pwd)/toolchain/clang-r450784e/bin:$PATH
           mkdir -p out
-          make O=out vendor/kona-perf_defconfig
+          make O=out ARCH=arm64 vendor/kona-perf_defconfig
           cat arch/arm64/configs/vendor/xiaomi/apollo.config >> out/.config
-          make O=out olddefconfig
+          make O=out ARCH=arm64 olddefconfig
           make -j$(nproc --all) O=out ARCH=arm64 CC="ccache clang" CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1
 
       - name: 极简 AnyKernel3 打包
