@@ -54,3 +54,7 @@
 - **错误原文**: `../net/netfilter/xt_mark.c:33:32: error: incomplete definition of type 'struct xt_mark_tginfo2'`
 - **原因分析**: Commit `096a9ee7ec423983c1ec8f370de6890e920d2b4c` 错误地替换了多个 netfilter UAPI 头文件，将其内容改为了递归包含自身或指向不存在的路径，导致结构体定义缺失。
 - **修复对策**: 将受影响的 netfilter 相关头文件和源码恢复到 KernelSU 集成之前的版本（Commit `b19371a15235c783a6c24583053c47a84e36f574`）。
+## [2026-03-11 03:29] 错误诊断
+- **错误原文**: `Error: revocery: Failed to find update binary META-INF/com/google/android/update-binary`
+- **原因分析**: LineageOS Recovery 等现代 Recovery 环境不再提供 `/sbin/sh`，导致以 `#!/sbin/sh` 作为 Shebang 的脚本执行失败，报错找不到文件。
+- **修复对策**: 将 `anykernel3/META-INF/com/google/android/update-binary` 的 Shebang 修改为更通用的 `#!/bin/sh`。

@@ -117,7 +117,7 @@ jobs:
           
           # 切换到 anykernel3 目录打包，确保 META-INF 在根目录
           cd anykernel3
-          zip -r9 "../${ZIP_NAME}" ./* -x .git* -x README.md -x LICENSE
+          zip -r9 "../${ZIP_NAME}" * -x .git* -x README.md -x LICENSE
           cd ..
 
       - name: 上传编译结果
