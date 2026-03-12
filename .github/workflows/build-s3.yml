@@ -1,4 +1,4 @@
-name: 编译内核 (S3 Rebuild v8 - AnyKernel3 Hybrid)
+name: 编译内核 (S3 Rebuild v9 - Minimal Flash)
 
 on:
   workflow_dispatch:
@@ -26,6 +26,7 @@ jobs:
         run: |
           export PATH=$(pwd)/toolchain/clang-r450784e/bin:$PATH
           mkdir -p out
+          # 开启 KernelSU 并注入 netfilter 补丁
           echo "CONFIG_KSU=y" >> arch/arm64/configs/vendor/kona-perf_defconfig
           make O=out ARCH=arm64 vendor/kona-perf_defconfig
           cat arch/arm64/configs/vendor/xiaomi/apollo.config >> out/.config
@@ -33,41 +34,93 @@ jobs:
           make O=out ARCH=arm64 olddefconfig
           make -j$(nproc --all) O=out ARCH=arm64 CC="ccache clang" CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1
 
-      - name: 准备 AnyKernel3 (注入最新 MagiskBoot)
+      - name: S3 Rebuild (重组 Boot 镜像)
         run: |
-          # 1. 替换 AnyKernel3 中的工具，确保支持 Android 16
+          # 1. 获取最新 magiskboot (x86_64)
           curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
-          unzip -j magisk.zip "lib/arm64-v8a/libmagiskboot.so" -d anykernel3/tools/
-          mv anykernel3/tools/libmagiskboot.so anykernel3/tools/magiskboot
-          chmod +x anykernel3/tools/magiskboot
+          unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d .
+          mv libmagiskboot.so magiskboot
+          chmod +x magiskboot
           
-          # 2. 放入新内核和 DTBO
-          if [ -f "out/arch/arm64/boot/Image" ]; then
-            cp out/arch/arm64/boot/Image anykernel3/Image
+          # 2. 解包原厂 boot (必须确保 boot-truncated.img 在仓库根目录)
+          mkdir unpack_tmp
+          cp boot-truncated.img magiskboot unpack_tmp/
+          cd unpack_tmp
+          ./magiskboot unpack boot-truncated.img
+          
+          # 3. 替换内核二进制文件
+          # 检查编译产物是 Image 还是 Image.gz
+          if [ -f "../out/arch/arm64/boot/Image" ]; then
+            cp ../out/arch/arm64/boot/Image kernel
           else
-            cp out/arch/arm64/boot/Image.gz anykernel3/Image.gz
+            cp ../out/arch/arm64/boot/Image.gz kernel
           fi
           
-          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
-            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo anykernel3/dtbo.img
-          fi
-          
-          # 3. 放入 DTB (如果 AnyKernel3 需要)
-          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/kona-v2.dtb" ]; then
-            cp out/arch/arm64/boot/dts/vendor/qcom/kona-v2.dtb anykernel3/dtb
-          fi
+          # 4. 重组 boot.img
+          ./magiskboot repack boot-truncated.img ../boot.img
+          cd ..
 
-      - name: 打包刷机包
+      - name: 准备极简刷机包 (dd script)
         run: |
-          # 设置北京时间戳
+          # 准备目录结构
+          mkdir -p flash_zip/META-INF/com/google/android
+          
+          # 复制镜像
+          mv boot.img flash_zip/
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash_zip/dtbo.img
+          fi
+          
+          # 创建极简 update-binary 脚本
+          cat << 'EOF' > flash_zip/META-INF/com/google/android/update-binary
+          #!/sbin/sh
+          OUTFD=$2
+          ZIPFILE=$3
+          
+          ui_print() {
+            echo -e "ui_print $1\nui_print" >& /proc/self/fd/$OUTFD
+          }
+          
+          ui_print "--------------------------------------"
+          ui_print " S3 Rebuild Flash Script (Minimal) "
+          ui_print " Redmi K30S Ultra (apollon) "
+          ui_print "--------------------------------------"
+          
+          TMPDIR=/tmp/kernel_install
+          mkdir -p $TMPDIR
+          
+          ui_print "- Extracting images..."
+          # 只提取必要的
+          unzip -o "$ZIPFILE" "boot.img" "dtbo.img" -d $TMPDIR
+          
+          ui_print "- Flashing boot.img..."
+          dd if=$TMPDIR/boot.img of=/dev/block/bootdevice/by-name/boot
+          
+          if [ -f "$TMPDIR/dtbo.img" ]; then
+            ui_print "- Flashing dtbo.img..."
+            dd if=$TMPDIR/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
+          fi
+          
+          ui_print "- Cleaning up..."
+          rm -rf $TMPDIR
+          
+          ui_print "--------------------------------------"
+          ui_print " Installation Successful! "
+          ui_print "--------------------------------------"
+          EOF
+          chmod 755 flash_zip/META-INF/com/google/android/update-binary
+          
+          # 创建空的 updater-script (有些 Recovery 需要它)
+          touch flash_zip/META-INF/com/google/android/updater-script
+
+      - name: 打包产物
+        run: |
           DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
-          ZIP_NAME="apollon-ksu-v28-${DATE}.zip"
+          ZIP_NAME="apollon-s3-ksu-v28-${DATE}.zip"
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
           
-          cd anykernel3
-          # 确保权限
-          chmod -R 755 .
-          zip -r9X "../${ZIP_NAME}" * -x .git* -x README.md -x LICENSE
+          cd flash_zip
+          zip -r9 "../${ZIP_NAME}" *
           cd ..
 
       - name: 上传产物
