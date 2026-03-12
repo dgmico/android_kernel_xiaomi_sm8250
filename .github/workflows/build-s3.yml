@@ -1,4 +1,4 @@
-name: 编译内核 (S3 Rebuild v5)
+name: 编译内核 (S3 Rebuild v6)
 
 on:
   workflow_dispatch:
@@ -35,11 +35,21 @@ jobs:
       - name: 服务端重组镜像
         run: |
           mkdir -p repack
-          curl -L "https://mico.2ec89b90ca4e5971b2c56310087c5e39.r2.cloudflarestorage.com/boot.img" -o repack/boot-stock.img
+          # 增加 -f 和 -A 参数，确保下载的是文件而不是错误页面
+          curl -f -L -A "Mozilla/5.0" "https://mico.2ec89b90ca4e5971b2c56310087c5e39.r2.cloudflarestorage.com/boot.img" -o repack/boot-stock.img
+          
+          # 检查文件大小，确保不是 0 或极小文件
+          FILE_SIZE=$(stat -c%s "repack/boot-stock.img")
+          if [ "$FILE_SIZE" -lt 1000000 ]; then
+             echo "错误: 下载的 boot.img 过小 ($FILE_SIZE 字节)，链接可能已失效或被拒绝。"
+             exit 1
+          fi
+          
           curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
           unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d repack/
           mv repack/libmagiskboot.so repack/magiskboot
           chmod +x repack/magiskboot
+          
           cd repack
           ./magiskboot unpack boot-stock.img
           if [ -f "../out/arch/arm64/boot/Image" ]; then
