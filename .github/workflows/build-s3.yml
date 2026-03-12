@@ -1,4 +1,4 @@
-name: 编译内核 (S3 Rebuild v6)
+name: 编译内核 (LineageOS Official Rebuild)
 
 on:
   workflow_dispatch:
@@ -32,16 +32,15 @@ jobs:
           make O=out ARCH=arm64 olddefconfig
           make -j$(nproc --all) O=out ARCH=arm64 CC="ccache clang" CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1
 
-      - name: 服务端重组镜像
+      - name: 服务端重组镜像 (基于 LineageOS 官方 Boot)
         run: |
           mkdir -p repack
-          # 增加 -f 和 -A 参数，确保下载的是文件而不是错误页面
-          curl -f -L -A "Mozilla/5.0" "https://mico.2ec89b90ca4e5971b2c56310087c5e39.r2.cloudflarestorage.com/boot.img" -o repack/boot-stock.img
+          # 使用官方 LineageOS 22/23 boot.img
+          curl -f -L -A "Mozilla/5.0" "https://mirrorbits.lineageos.org/full/apollon/20260307/boot.img" -o repack/boot-stock.img
           
-          # 检查文件大小，确保不是 0 或极小文件
           FILE_SIZE=$(stat -c%s "repack/boot-stock.img")
           if [ "$FILE_SIZE" -lt 1000000 ]; then
-             echo "错误: 下载的 boot.img 过小 ($FILE_SIZE 字节)，链接可能已失效或被拒绝。"
+             echo "错误: 下载的 boot.img 过小 ($FILE_SIZE 字节)，链接可能已失效。"
              exit 1
           fi
           
@@ -68,14 +67,14 @@ jobs:
             cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash/dtbo.img
           fi
           
-          # 使用 Base64 编码 update-binary 脚本以绕过 GitHub Actions 的 YAML 扫描
-          echo "IyEvc2Jpbi9zaAp1aV9wcmludCgpIHsgZWNobyAtZSAidWlfcHJpbnQgJDFcbnVpX3ByaW50IiA+JiQyOyB9CnVpX3ByaW50ICItIEZsYXNoaW5nIFMzIFJlYnVpbHQgS2VybmVsLi4uIiAkMgpkZCBpZj0vdG1wL3NpZGVsb2FkL3BhY2thZ2UuemlwL2Jvb3QuaW1nIG9mPS9kZXYvYmxvY2svYm9vdGRldmljZS9ieS1uYW1lL2Jvb3QKWyAtZiAiL3RtcC9zaWRlbG9hZC9wYWNrYWdlLnppcC9kdGJvLmltZyIgXSAmJiBkZCBpZj0vdG1wL3NpZGVsb2FkL3BhY2thZ2UuemlwL2R0Ym8uaW1nIG9mPS9kZXYvYmxvY2svYm9vdGRldmljZS9ieS1uYW1lL2R0Ym8KdWlfcHJpbnQgIi0gRG9uZSEiICQyCg==" | base64 -d > flash/META-INF/com/google/android/update-binary
+          # 使用 Base64 编码 update-binary 脚本
+          echo "IyEvc2Jpbi9zaAp1aV9wcmludCgpIHsgZWNobyAtZSAidWlfcHJpbnQgJDFcbnVpX3ByaW50IiA+JiQyOyB9CnVpX3ByaW50ICItIEZsYXNoaW5nIExpbmVhZ2VPUyBSZWJ1aWx0IEtlcm5lbC4uLiIgJDIKZGQgaWY9L3RtcC9zaWRlbG9hZC9wYWNrYWdlLnppcC9ib290LmltZyBvZj0vZGV2L2Jsb2NrL2Jvb3RkZXZpY2UvYnktbmFtZS9ib290ClsgLWYgIi90bXAvc2lkZWxvYWQvcGFja2FnZS56aXAvZHRiby5pbWciIF0gJiYgZGQgaWY9L3RtcC9zaWRlbG9hZC9wYWNrYWdlLnppcC9kdGJvLmltZyBvZj0vZGV2L2Jsb2NrL2Jvb3RkZXZpY2UvYnktbmFtZS9kdGJvCnVpX3ByaW50ICItIERvbmUhIiAkMgo=" | base64 -d > flash/META-INF/com/google/android/update-binary
           
           chmod +x flash/META-INF/com/google/android/update-binary
-          cd flash && zip -r ../apollon-rebuild.zip *
+          cd flash && zip -r ../apollon-official-rebuild.zip *
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-flashable
-          path: apollon-rebuild.zip
+          name: apollon-official-kernel
+          path: apollon-official-rebuild.zip
