@@ -1,4 +1,4 @@
-name: 编译内核 (S3 Rebuild v7)
+name: 编译内核 (S3 Rebuild v8 - AnyKernel3 Hybrid)
 
 on:
   workflow_dispatch:
@@ -33,49 +33,45 @@ jobs:
           make O=out ARCH=arm64 olddefconfig
           make -j$(nproc --all) O=out ARCH=arm64 CC="ccache clang" CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1
 
-      - name: 服务端重组镜像 (基于 yorlee S3 Boot)
+      - name: 准备 AnyKernel3 (注入最新 MagiskBoot)
         run: |
-          mkdir -p repack
-          # 使用新的 yorlee S3 boot.img
-          curl -f -L -A "Mozilla/5.0" "https://s3.yorlee.xyz/boot.img" -o repack/boot-stock.img
-          
-          FILE_SIZE=$(stat -c%s "repack/boot-stock.img")
-          if [ "$FILE_SIZE" -lt 1000000 ]; then
-             echo "错误: 下载的 boot.img 过小 ($FILE_SIZE 字节)，链接可能已失效。"
-             exit 1
-          fi
-          
+          # 1. 替换 AnyKernel3 中的工具，确保支持 Android 16
           curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
-          unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d repack/
-          mv repack/libmagiskboot.so repack/magiskboot
-          chmod +x repack/magiskboot
+          unzip -j magisk.zip "lib/arm64-v8a/libmagiskboot.so" -d anykernel3/tools/
+          mv anykernel3/tools/libmagiskboot.so anykernel3/tools/magiskboot
+          chmod +x anykernel3/tools/magiskboot
           
-          cd repack
-          ./magiskboot unpack boot-stock.img
-          if [ -f "../out/arch/arm64/boot/Image" ]; then
-            cp ../out/arch/arm64/boot/Image kernel
+          # 2. 放入新内核和 DTBO
+          if [ -f "out/arch/arm64/boot/Image" ]; then
+            cp out/arch/arm64/boot/Image anykernel3/Image
           else
-            cp ../out/arch/arm64/boot/Image.gz kernel
+            cp out/arch/arm64/boot/Image.gz anykernel3/Image.gz
           fi
-          ./magiskboot repack boot-stock.img boot-new.img
-          cd ..
+          
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo anykernel3/dtbo.img
+          fi
+          
+          # 3. 放入 DTB (如果 AnyKernel3 需要)
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/kona-v2.dtb" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/kona-v2.dtb anykernel3/dtb
+          fi
 
       - name: 打包刷机包
         run: |
-          mkdir -p flash/META-INF/com/google/android
-          cp repack/boot-new.img flash/boot.img
-          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
-            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash/dtbo.img
-          fi
+          # 设置北京时间戳
+          DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
+          ZIP_NAME="apollon-ksu-v28-${DATE}.zip"
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
           
-          # 使用 Base64 编码 update-binary 脚本
-          echo "IyEvc2Jpbi9zaAp1aV9wcmludCgpIHsgZWNobyAtZSAidWlfcHJpbnQgJDFcbnVpX3ByaW50IiA+JiQyOyB9CnVpX3ByaW50ICItIEZsYXNoaW5nIFMzIFJlYnVpbHQgS2VybmVsLi4uIiAkMgpkZCBpZj0vdG1wL3NpZGVsb2FkL3BhY2thZ2UuemlwL2Jvb3QuaW1nIG9mPS9kZXYvYmxvY2svYm9vdGRldmljZS9ieS1uYW1lL2Jvb3QKWyAtZiAiL3RtcC9zaWRlbG9hZC9wYWNrYWdlLnppcC9kdGJvLmltZyIgXSAmJiBkZCBpZj0vdG1wL3NpZGVsb2FkL3BhY2thZ2UuemlwL2R0Ym8uaW1nIG9mPS9kZXYvYmxvY2svYm9vdGRldmljZS9ieS1uYW1lL2R0Ym8KdWlfcHJpbnQgIi0gRG9uZSEiICQyCg==" | base64 -d > flash/META-INF/com/google/android/update-binary
-          
-          chmod +x flash/META-INF/com/google/android/update-binary
-          cd flash && zip -r ../apollon-rebuild.zip *
+          cd anykernel3
+          # 确保权限
+          chmod -R 755 .
+          zip -r9X "../${ZIP_NAME}" * -x .git* -x README.md -x LICENSE
+          cd ..
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
         with:
-          name: kernel-flashable
-          path: apollon-rebuild.zip
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_NAME }}
