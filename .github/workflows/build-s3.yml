@@ -52,7 +52,7 @@ jobs:
           # 1. 获取最新官方完整 boot.img 作为底包
           curl -L "https://s3.yorlee.xyz/boot.img" -o boot_official.img
           
-          # 2. 获取最新 magiskboot (x86_64)
+          # 2. 获取最新 magiskboot 工具
           curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
           unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d .
           mv libmagiskboot.so magiskboot
@@ -64,35 +64,68 @@ jobs:
           cd unpack_tmp
           ./magiskboot unpack boot_official.img
           
-          # 4. 智能替换内核并进行全面补丁 (AVB/Verity/KeepVerity)
-          # 检测原包内核格式 (Image vs Image.gz)
-          if [ -f "kernel" ]; then
-            # 简单检查原包是否压缩 (0x1f 0x8b 为 GZIP 标志)
-            if head -c 2 kernel | grep -q $'\x1f\x8b'; then
-              echo "[Repack] Original kernel is compressed (GZIP)."
-              [ -f "../out/arch/arm64/boot/Image.gz" ] && cp ../out/arch/arm64/boot/Image.gz kernel || (gzip -c ../out/arch/arm64/boot/Image > kernel)
-            else
-              echo "[Repack] Original kernel is uncompressed (RAW)."
-              cp ../out/arch/arm64/boot/Image kernel
-            fi
+          # 4. 纯净替换内核 (保留 AVB 绕过补丁)
+          # 判断内核压缩格式
+          if head -c 2 kernel | grep -q $'\x1f\x8b'; then
+            echo "[Repack] Using Compressed GZIP Kernel."
+            [ -f "../out/arch/arm64/boot/Image.gz" ] && cp ../out/arch/arm64/boot/Image.gz kernel || (gzip -c ../out/arch/arm64/boot/Image > kernel)
           else
-            # 默认使用 Image.gz
-            [ -f "../out/arch/arm64/boot/Image.gz" ] && cp ../out/arch/arm64/boot/Image.gz kernel || cp ../out/arch/arm64/boot/Image kernel
+            echo "[Repack] Using Uncompressed RAW Kernel."
+            cp ../out/arch/arm64/boot/Image kernel
           fi
           
-          # 执行 Magisk 官方推荐的镜像补丁流程
-          export KEEPVERITY=false
-          export KEEPFORCEENCRYPT=true
-          ./magiskboot patch boot_official.img || echo "Patch failed, trying repack directly..."
+          # 仅针对内核进行 AVB 补丁，不改动 Ramdisk
+          ./magiskboot hexpatch kernel 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true
           
-          # 5. 重组 boot.img
+          # 5. 纯净重组 (不使用 patch 命令，直接 repack)
           ./magiskboot repack boot_official.img ../boot.img
           cd ..
+
+      - name: 准备极简刷机包 (dd script)
+        run: |
+          # 准备目录结构
+          mkdir -p flash_zip/META-INF/com/google/android
           
-          # 6. 处理 DTBO
-          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
-            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo dtbo.img
+          # 仅复制重组后的 boot.img (暂时不带 DTBO 以防校验冲突)
+          [ -f "boot.img" ] && mv boot.img flash_zip/
+          
+          # 创建极简 update-binary 脚本
+          cat << 'EOF' > flash_zip/META-INF/com/google/android/update-binary
+          #!/sbin/sh
+          # 极简刷机脚本 (v12 - Pure Kernel Only)
+
+          ui_print() {
+            echo "$1"
+          }
+
+          ui_print "--------------------------------------"
+          ui_print " S3 Rebuild Flash Script (v12) "
+          ui_print " Pure Kernel Replacement Strategy "
+          ui_print "--------------------------------------"
+
+          ZIPFILE=$3
+          TMPDIR=/tmp/kernel_install
+          mkdir -p $TMPDIR
+
+          ui_print "- Extracting pure boot.img..."
+          unzip -o "$ZIPFILE" "boot.img" -d $TMPDIR
+
+          if [ -f "$TMPDIR/boot.img" ]; then
+            ui_print "- Flashing boot.img (Pure & Patched)..."
+            dd if=$TMPDIR/boot.img of=/dev/block/bootdevice/by-name/boot
           fi
+
+          ui_print "- Cleaning up..."
+          rm -rf $TMPDIR
+
+          ui_print "--------------------------------------"
+          ui_print " Installation Successful! "
+          ui_print " Note: DTBO was not modified. "
+          ui_print " Please reboot system. "
+          ui_print "--------------------------------------"
+          exit 0
+          EOF
+          chmod 755 flash_zip/META-INF/com/google/android/update-binary
 
       - name: 准备极简刷机包 (dd script)
         run: |
