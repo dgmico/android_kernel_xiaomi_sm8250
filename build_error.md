@@ -24,4 +24,16 @@
     2. 同步还原 `xt_tcpmss.h`, `xt_TCPMSS.h`, `xt_comment.h` 等已发现损坏的头文件。
     3. 在 `include/linux/netfilter/` 目录下保留副本以确保内部构建兼容性。
 
+- **结论**: 该方案已验证成功，系统正常启动，KernelSU 运行正常。
+
+## [2026-03-13 04:00] 刷入报错诊断 (Error in /sideload/package.zip status 1)
+- **现象**: ADB Sideload 刷入时报错 `status 1`，日志显示 `illegal file descriptor name`。
+- **根源**: 1. `update-binary` 脚本尝试将进度重定向到 `/proc/self/fd/24`，但在某些 Recovery 环境中该描述符不可访问。2. 脚本生成时带有的 YAML 缩进可能导致 shell 解析异常。
+- **修复对策**: 
+    1. 简化 `ui_print` 函数，移除 `/proc/self/fd/` 重定向，直接使用 `echo`。
+    2. 移除 `update-binary` 脚本生成时的缩进。
+    3. 在脚本末尾显式添加 `exit 0` 确保状态码正确。
+- **验证**: 虽然之前报 status 1，但 `dd` 写入实际上已经完成。此修改旨在消除报错，提供干净的刷入体验。
+
+
 
