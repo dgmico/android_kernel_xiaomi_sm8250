@@ -16,3 +16,12 @@
 - **原因分析**: `struct xt_connmark_tginfo2` 及其相关常量（`XT_CONNMARK_SET`, `XT_CONNMARK_SAVE`, `XT_CONNMARK_RESTORE`）未在相关的 `include/uapi/linux/netfilter/xt_connmark.h` 中定义，或定义被由于某些宏配置未开启而未被包含。
 - **修复对策**: 检查并更新 `include/uapi/linux/netfilter/xt_connmark.h`，确保包含该结构体的完整定义及其常量。
 
+## [2026-03-13 03:25] 错误诊断 (net/netfilter/xt_DSCP.c)
+- **错误原文**: `../net/netfilter/xt_DSCP.c:34:51: error: use of undeclared identifier 'XT_DSCP_SHIFT'`
+- **原因分析**: 大量 netfilter 相关的 UAPI 头文件被替换成了具有无限递归特性的重定向文件（如 `xt_dscp.h` 包含 `linux/netfilter/xt_dscp.h`），导致关键常量和结构体定义丢失。
+- **修复对策**: 
+    1. 还原 `include/uapi/linux/netfilter/xt_dscp.h` 和 `include/uapi/linux/netfilter/xt_DSCP.h` 的完整定义。
+    2. 同步还原 `xt_tcpmss.h`, `xt_TCPMSS.h`, `xt_comment.h` 等已发现损坏的头文件。
+    3. 在 `include/linux/netfilter/` 目录下保留副本以确保内部构建兼容性。
+
+
