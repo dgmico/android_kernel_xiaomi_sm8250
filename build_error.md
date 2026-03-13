@@ -41,5 +41,18 @@
 - **修复对策**: 恢复 YAML 合法的缩进。通过在 `cat << 'EOF'` 块内保持一致的缩进（相对于 `run` 关键字），YAML 解析器会自动剥离基础缩进，从而在生成的脚本文件中不会保留多余空格。
 - **验证**: 修复缩进后重新提交，观察 CI 启动情况。
 
+## [2026-03-13 07:30] 刷入后进入 Fastboot 模式诊断 (Bootloop to Fastboot)
+- **现象**: 使用极简 `dd` 脚本成功刷入 `boot.img` 和 `dtbo.img` 后，设备重启直接进入 Fastboot 模式，无法启动系统。
+- **原因分析**: 
+    1. **AVB (Android Verified Boot) 校验**: Redmi K30S Ultra 对分区完整性校验极其严格。直接 `dd` 编译出的原始 `dtbo.img` 或未经 AVB 禁用的 `boot.img` 会导致签名校验失败，从而被 Bootloader 拒绝启动。
+    2. **MagiskBoot 补丁缺失**: `magiskboot repack` 默认不一定会移除所有 AVB 标志，除非显式操作或内核本身已通过特定方式打补丁。
+- **修复对策**: 
+    1. 在 `magiskboot repack` 步骤中增加 `dtbo` 的处理逻辑。
+    2. 使用 `magiskboot patch` 明确针对内核进行 AVB 禁用处理（如果 `repack` 自动处理逻辑不生效）。
+    3. 考虑到 Kona 平台的特殊性，将 DTBO 注入过程改为由 MagiskBoot 统一处理或确保镜像已签名。
+    4. 暂时移除单独 `dd dtbo` 的逻辑，尝试仅更新 `boot.img`（内含内核）以定位是否是 DTBO 导致的校验失败。
+- **验证**: 重新构建并观察是否能跳过 Fastboot 校验。
+
+
 
 

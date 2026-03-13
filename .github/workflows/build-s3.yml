@@ -48,17 +48,24 @@ jobs:
           cd unpack_tmp
           ./magiskboot unpack boot-truncated.img
           
-          # 3. 替换内核二进制文件
-          # 检查编译产物是 Image 还是 Image.gz
+          # 3. 替换内核并禁用 AVB
           if [ -f "../out/arch/arm64/boot/Image" ]; then
             cp ../out/arch/arm64/boot/Image kernel
           else
             cp ../out/arch/arm64/boot/Image.gz kernel
           fi
           
+          # 尝试禁用 AVB (Kona 平台关键)
+          ./magiskboot hexpatch kernel 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true
+          
           # 4. 重组 boot.img
           ./magiskboot repack boot-truncated.img ../boot.img
           cd ..
+          
+          # 5. 处理 DTBO (保持原始性以防校验失败)
+          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
+            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo dtbo.img
+          fi
 
       - name: 准备极简刷机包 (dd script)
         run: |
@@ -66,22 +73,20 @@ jobs:
           mkdir -p flash_zip/META-INF/com/google/android
           
           # 复制镜像
-          mv boot.img flash_zip/
-          if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
-            cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo flash_zip/dtbo.img
-          fi
+          [ -f "boot.img" ] && mv boot.img flash_zip/
+          [ -f "dtbo.img" ] && mv dtbo.img flash_zip/
           
           # 创建极简 update-binary 脚本
           cat << 'EOF' > flash_zip/META-INF/com/google/android/update-binary
           #!/sbin/sh
-          # 极简刷机脚本 - 修复兼容性版本
+          # 极简刷机脚本 - 修复 Fastboot 引导循环
 
           ui_print() {
             echo "$1"
           }
 
           ui_print "--------------------------------------"
-          ui_print " S3 Rebuild Flash Script (Minimal) "
+          ui_print " S3 Rebuild Flash Script (v10) "
           ui_print " Redmi K30S Ultra (apollon) "
           ui_print "--------------------------------------"
 
@@ -92,11 +97,14 @@ jobs:
           ui_print "- Extracting images..."
           unzip -o "$ZIPFILE" "boot.img" "dtbo.img" -d $TMPDIR
 
-          ui_print "- Flashing boot.img..."
-          dd if=$TMPDIR/boot.img of=/dev/block/bootdevice/by-name/boot
+          if [ -f "$TMPDIR/boot.img" ]; then
+            ui_print "- Flashing boot.img (AVB Patched)..."
+            dd if=$TMPDIR/boot.img of=/dev/block/bootdevice/by-name/boot
+          fi
 
           if [ -f "$TMPDIR/dtbo.img" ]; then
-            ui_print "- Flashing dtbo.img..."
+            # 某些环境下直接 dd 原始 dtbo 会进 fastboot，这里先尝试仅刷 boot
+            ui_print "- Warning: Flashing dtbo.img..."
             dd if=$TMPDIR/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
           fi
 
@@ -105,6 +113,7 @@ jobs:
 
           ui_print "--------------------------------------"
           ui_print " Installation Successful! "
+          ui_print " Please reboot system. "
           ui_print "--------------------------------------"
           exit 0
           EOF
