@@ -49,22 +49,25 @@ jobs:
 
       - name: S3 Rebuild (重组 Boot 镜像)
         run: |
-          # 1. 获取最新 magiskboot (x86_64)
+          # 1. 获取最新官方完整 boot.img 作为底包
+          curl -L "https://s3.yorlee.xyz/boot.img" -o boot_official.img
+          
+          # 2. 获取最新 magiskboot (x86_64)
           curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
           unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d .
           mv libmagiskboot.so magiskboot
           chmod +x magiskboot
           
-          # 2. 解包原厂 boot
+          # 3. 解包官方 boot
           mkdir unpack_tmp
-          cp boot-truncated.img magiskboot unpack_tmp/
+          cp boot_official.img magiskboot unpack_tmp/
           cd unpack_tmp
-          ./magiskboot unpack boot-truncated.img
+          ./magiskboot unpack boot_official.img
           
-          # 3. 智能替换内核并进行全面补丁 (AVB/Verity/KeepVerity)
+          # 4. 智能替换内核并进行全面补丁 (AVB/Verity/KeepVerity)
           # 检测原包内核格式 (Image vs Image.gz)
           if [ -f "kernel" ]; then
-            # 简单检查原包是否压缩
+            # 简单检查原包是否压缩 (0x1f 0x8b 为 GZIP 标志)
             if head -c 2 kernel | grep -q $'\x1f\x8b'; then
               echo "[Repack] Original kernel is compressed (GZIP)."
               [ -f "../out/arch/arm64/boot/Image.gz" ] && cp ../out/arch/arm64/boot/Image.gz kernel || (gzip -c ../out/arch/arm64/boot/Image > kernel)
@@ -77,17 +80,16 @@ jobs:
             [ -f "../out/arch/arm64/boot/Image.gz" ] && cp ../out/arch/arm64/boot/Image.gz kernel || cp ../out/arch/arm64/boot/Image kernel
           fi
           
-          # 执行 Magisk 官方推荐的镜像补丁流程 (处理 AVB/dm-verity)
-          # 使用 KEEPVERITY=false 尝试强制移除校验
+          # 执行 Magisk 官方推荐的镜像补丁流程
           export KEEPVERITY=false
           export KEEPFORCEENCRYPT=true
-          ./magiskboot patch boot-truncated.img || echo "Patch failed, trying repack directly..."
+          ./magiskboot patch boot_official.img || echo "Patch failed, trying repack directly..."
           
-          # 4. 重组 boot.img
-          ./magiskboot repack boot-truncated.img ../boot.img
+          # 5. 重组 boot.img
+          ./magiskboot repack boot_official.img ../boot.img
           cd ..
           
-          # 5. 处理 DTBO
+          # 6. 处理 DTBO
           if [ -f "out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo" ]; then
             cp out/arch/arm64/boot/dts/vendor/qcom/apollo-sm8250-overlay.dtbo dtbo.img
           fi
