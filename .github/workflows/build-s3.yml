@@ -73,41 +73,41 @@ jobs:
           
           # 创建极简 update-binary 脚本
           cat << 'EOF' > flash_zip/META-INF/com/google/android/update-binary
-#!/sbin/sh
-# 极简刷机脚本 - 修复兼容性版本
+          #!/sbin/sh
+          # 极简刷机脚本 - 修复兼容性版本
 
-ui_print() {
-  echo "$1"
-}
+          ui_print() {
+            echo "$1"
+          }
 
-ui_print "--------------------------------------"
-ui_print " S3 Rebuild Flash Script (Minimal) "
-ui_print " Redmi K30S Ultra (apollon) "
-ui_print "--------------------------------------"
+          ui_print "--------------------------------------"
+          ui_print " S3 Rebuild Flash Script (Minimal) "
+          ui_print " Redmi K30S Ultra (apollon) "
+          ui_print "--------------------------------------"
 
-ZIPFILE=$3
-TMPDIR=/tmp/kernel_install
-mkdir -p $TMPDIR
+          ZIPFILE=$3
+          TMPDIR=/tmp/kernel_install
+          mkdir -p $TMPDIR
 
-ui_print "- Extracting images..."
-unzip -o "$ZIPFILE" "boot.img" "dtbo.img" -d $TMPDIR
+          ui_print "- Extracting images..."
+          unzip -o "$ZIPFILE" "boot.img" "dtbo.img" -d $TMPDIR
 
-ui_print "- Flashing boot.img..."
-dd if=$TMPDIR/boot.img of=/dev/block/bootdevice/by-name/boot
+          ui_print "- Flashing boot.img..."
+          dd if=$TMPDIR/boot.img of=/dev/block/bootdevice/by-name/boot
 
-if [ -f "$TMPDIR/dtbo.img" ]; then
-  ui_print "- Flashing dtbo.img..."
-  dd if=$TMPDIR/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
-fi
+          if [ -f "$TMPDIR/dtbo.img" ]; then
+            ui_print "- Flashing dtbo.img..."
+            dd if=$TMPDIR/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
+          fi
 
-ui_print "- Cleaning up..."
-rm -rf $TMPDIR
+          ui_print "- Cleaning up..."
+          rm -rf $TMPDIR
 
-ui_print "--------------------------------------"
-ui_print " Installation Successful! "
-ui_print "--------------------------------------"
-exit 0
-EOF
+          ui_print "--------------------------------------"
+          ui_print " Installation Successful! "
+          ui_print "--------------------------------------"
+          exit 0
+          EOF
           chmod 755 flash_zip/META-INF/com/google/android/update-binary
           
           # 创建空的 updater-script (有些 Recovery 需要它)
