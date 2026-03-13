@@ -1,4 +1,4 @@
-name: 编译内核 (S3 Rebuild v9 - Minimal Flash)
+name: 编译内核 (AnyKernel3 v13 - Final Stand)
 
 on:
   workflow_dispatch:
@@ -47,149 +47,43 @@ jobs:
           make O=out ARCH=arm64 olddefconfig
           make -j$(nproc --all) O=out ARCH=arm64 CC="ccache clang" CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-gnu- CROSS_COMPILE_ARM32=arm-linux-gnueabi- LLVM=1 LLVM_IAS=1
 
-      - name: S3 Rebuild (重组 Boot 镜像)
+      - name: AnyKernel3 打包 (v13 - Final Stand)
         run: |
-          # 1. 获取最新官方完整 boot.img 作为底包
-          curl -L "https://s3.yorlee.xyz/boot.img" -o boot_official.img
+          # 1. 获取最新 AnyKernel3 框架
+          git clone https://github.com/osm0sis/AnyKernel3 --depth 1
+          cd AnyKernel3
           
-          # 2. 获取最新 magiskboot 工具
+          # 2. 配置 AnyKernel3 针对 apollon (A-only, SM8250)
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+          sed -i 's/is_slot_device=1/is_slot_device=0/g' anykernel.sh
+          # 修改分区块路径 (SM8250 通用路径)
+          sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=/dev/block/bootdevice/by-name/boot|g' anykernel.sh
+          
+          # 3. 集成 MagiskBoot v28 (用于本地 Patch)
           curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
           unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d .
           mv libmagiskboot.so magiskboot
           chmod +x magiskboot
           
-          # 3. 解包官方 boot
-          mkdir unpack_tmp
-          cp boot_official.img magiskboot unpack_tmp/
-          cd unpack_tmp
-          ./magiskboot unpack boot_official.img
-          
-          # 4. 纯净替换内核 (保留 AVB 绕过补丁)
-          # 判断内核压缩格式
-          if head -c 2 kernel | grep -q $'\x1f\x8b'; then
-            echo "[Repack] Using Compressed GZIP Kernel."
-            [ -f "../out/arch/arm64/boot/Image.gz" ] && cp ../out/arch/arm64/boot/Image.gz kernel || (gzip -c ../out/arch/arm64/boot/Image > kernel)
+          # 4. 拷贝内核产物
+          if [ -f "../out/arch/arm64/boot/Image.gz" ]; then
+            cp ../out/arch/arm64/boot/Image.gz .
           else
-            echo "[Repack] Using Uncompressed RAW Kernel."
-            cp ../out/arch/arm64/boot/Image kernel
+            cp ../out/arch/arm64/boot/Image .
           fi
           
-          # 仅针对内核进行 AVB 补丁，不改动 Ramdisk
-          ./magiskboot hexpatch kernel 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true
-          
-          # 5. 纯净重组 (不使用 patch 命令，直接 repack)
-          ./magiskboot repack boot_official.img ../boot.img
-          cd ..
+          # 5. 注入 AVB Patch 逻辑到 anykernel.sh
+          # 在 split_boot 之后，加载内核前执行
+          sed -i '/split_boot;/a \
+\
+ui_print "- Executing local AVB Patch (Kona)..."; \
+./magiskboot hexpatch "$split_img/kernel" 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true;' anykernel.sh
 
-      - name: 准备极简刷机包 (dd script)
-        run: |
-          # 准备目录结构
-          mkdir -p flash_zip/META-INF/com/google/android
-          
-          # 仅复制重组后的 boot.img (暂时不带 DTBO 以防校验冲突)
-          [ -f "boot.img" ] && mv boot.img flash_zip/
-          
-          # 创建极简 update-binary 脚本
-          cat << 'EOF' > flash_zip/META-INF/com/google/android/update-binary
-          #!/sbin/sh
-          # 极简刷机脚本 (v12 - Pure Kernel Only)
-
-          ui_print() {
-            echo "$1"
-          }
-
-          ui_print "--------------------------------------"
-          ui_print " S3 Rebuild Flash Script (v12) "
-          ui_print " Pure Kernel Replacement Strategy "
-          ui_print "--------------------------------------"
-
-          ZIPFILE=$3
-          TMPDIR=/tmp/kernel_install
-          mkdir -p $TMPDIR
-
-          ui_print "- Extracting pure boot.img..."
-          unzip -o "$ZIPFILE" "boot.img" -d $TMPDIR
-
-          if [ -f "$TMPDIR/boot.img" ]; then
-            ui_print "- Flashing boot.img (Pure & Patched)..."
-            dd if=$TMPDIR/boot.img of=/dev/block/bootdevice/by-name/boot
-          fi
-
-          ui_print "- Cleaning up..."
-          rm -rf $TMPDIR
-
-          ui_print "--------------------------------------"
-          ui_print " Installation Successful! "
-          ui_print " Note: DTBO was not modified. "
-          ui_print " Please reboot system. "
-          ui_print "--------------------------------------"
-          exit 0
-          EOF
-          chmod 755 flash_zip/META-INF/com/google/android/update-binary
-
-      - name: 准备极简刷机包 (dd script)
-        run: |
-          # 准备目录结构
-          mkdir -p flash_zip/META-INF/com/google/android
-          
-          # 复制镜像
-          [ -f "boot.img" ] && mv boot.img flash_zip/
-          [ -f "dtbo.img" ] && mv dtbo.img flash_zip/
-          
-          # 创建极简 update-binary 脚本
-          cat << 'EOF' > flash_zip/META-INF/com/google/android/update-binary
-          #!/sbin/sh
-          # 极简刷机脚本 - 修复 Fastboot 引导循环
-
-          ui_print() {
-            echo "$1"
-          }
-
-          ui_print "--------------------------------------"
-          ui_print " S3 Rebuild Flash Script (v10) "
-          ui_print " Redmi K30S Ultra (apollon) "
-          ui_print "--------------------------------------"
-
-          ZIPFILE=$3
-          TMPDIR=/tmp/kernel_install
-          mkdir -p $TMPDIR
-
-          ui_print "- Extracting images..."
-          unzip -o "$ZIPFILE" "boot.img" "dtbo.img" -d $TMPDIR
-
-          if [ -f "$TMPDIR/boot.img" ]; then
-            ui_print "- Flashing boot.img (AVB Patched)..."
-            dd if=$TMPDIR/boot.img of=/dev/block/bootdevice/by-name/boot
-          fi
-
-          if [ -f "$TMPDIR/dtbo.img" ]; then
-            # 某些环境下直接 dd 原始 dtbo 会进 fastboot，这里先尝试仅刷 boot
-            ui_print "- Warning: Flashing dtbo.img..."
-            dd if=$TMPDIR/dtbo.img of=/dev/block/bootdevice/by-name/dtbo
-          fi
-
-          ui_print "- Cleaning up..."
-          rm -rf $TMPDIR
-
-          ui_print "--------------------------------------"
-          ui_print " Installation Successful! "
-          ui_print " Please reboot system. "
-          ui_print "--------------------------------------"
-          exit 0
-          EOF
-          chmod 755 flash_zip/META-INF/com/google/android/update-binary
-          
-          # 创建空的 updater-script (有些 Recovery 需要它)
-          touch flash_zip/META-INF/com/google/android/updater-script
-
-      - name: 打包产物
-        run: |
+          # 6. 打包 ZIP
           DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
-          ZIP_NAME="apollon-s3-ksu-v28-${DATE}.zip"
+          ZIP_NAME="apollon-ak3-v13-${DATE}.zip"
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
-          
-          cd flash_zip
-          zip -r9 "../${ZIP_NAME}" *
+          zip -r9 "../${ZIP_NAME}" * -x .git* -x README.md -x LICENSE
           cd ..
 
       - name: 上传产物
