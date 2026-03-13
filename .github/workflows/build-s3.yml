@@ -72,12 +72,13 @@ jobs:
           fi
           
           # 5. 注入 AVB Patch 逻辑
-          # 我们先创建一个 patch.sh，然后在 anykernel.sh 中调用它，避免复杂的 sed 嵌套
-          cat << 'EOF' > patch.sh
-#!/sbin/sh
-ui_print "- Executing local AVB Patch (Kona)..."
-./magiskboot hexpatch "$split_img/kernel" 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true
-EOF
+          # 我们先创建一个 patch.sh，然后在 anykernel.sh 中调用它
+          # 使用 unindented <<-'EOF' 确保在某些环境下的兼容性
+          cat > patch.sh <<-'EOF'
+          #!/sbin/sh
+          ui_print "- Executing local AVB Patch (Kona)..."
+          ./magiskboot hexpatch "$split_img/kernel" 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true
+          EOF
           chmod +x patch.sh
           
           # 修改 anykernel.sh 在合适位置调用 patch.sh
