@@ -56,7 +56,6 @@ jobs:
           # 2. 配置 AnyKernel3 针对 apollon (A-only, SM8250)
           sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
           sed -i 's/is_slot_device=1/is_slot_device=0/g' anykernel.sh
-          # 修改分区块路径 (SM8250 通用路径)
           sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=/dev/block/bootdevice/by-name/boot|g' anykernel.sh
           
           # 3. 集成 MagiskBoot v28 (用于本地 Patch)
@@ -72,12 +71,20 @@ jobs:
             cp ../out/arch/arm64/boot/Image .
           fi
           
-          # 5. 注入 AVB Patch 逻辑到 anykernel.sh
-          # 在 split_boot 之后，加载内核前执行
-          sed -i '/split_boot;/a \
-\
-ui_print "- Executing local AVB Patch (Kona)..."; \
-./magiskboot hexpatch "$split_img/kernel" 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true;' anykernel.sh
+          # 5. 注入 AVB Patch 逻辑
+          # 使用更稳健的方式插入补丁逻辑
+          cat << 'EOF' >> anykernel.sh
+
+# v13 补丁: 绕过 Kona 平台的 AVB 校验
+patch_kernel() {
+  if [ -f "$split_img/kernel" ]; then
+    ui_print "- Patching kernel AVB (Kona)..."
+    ./magiskboot hexpatch "$split_img/kernel" 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true
+  fi
+}
+# 在 split_boot 后执行
+sed -i '/split_boot;/a patch_kernel;' anykernel.sh
+EOF
 
           # 6. 打包 ZIP
           DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
