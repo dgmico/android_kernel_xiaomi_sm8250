@@ -82,7 +82,7 @@ jobs:
             LLVM=1 LLVM_IAS=1 \
             Image.gz Image.gz-dtb dtbo.img
 
-      - name: 使用 AnyKernel3 打包成果
+      - name: 使用 AnyKernel3 打包并签名
         run: |
           git clone https://github.com/osm0sis/AnyKernel3 --depth 1
           cd AnyKernel3
@@ -104,14 +104,18 @@ jobs:
             cp ../out/arch/arm64/boot/dtbo.img .
           fi
 
-          # 生成 ZIP 文件名
+          # 1. 预打包未签名版
+          zip -r9 "../unsigned.zip" * -x .git* -x README.md -x LICENSE
+          cd ..
+
+          # 2. 获取签名工具 (使用标准的 AOSP zipsigner)
+          curl -L https://github.com/m956885363/zipsigner/raw/master/zipsigner.jar -o zipsigner.jar
+          
+          # 3. 执行签名 (使用 testkey)
           DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
           ZIP_NAME="apollon-kernel-lineageos-${DATE}.zip"
           echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
-          
-          # 打包
-          zip -r9 "../${ZIP_NAME}" * -x .git* -x README.md -x LICENSE
-          cd ..
+          java -jar zipsigner.jar unsigned.zip "${ZIP_NAME}" testkey
 
       - name: 上传刷入包
         uses: actions/upload-artifact@v4
