@@ -1,0 +1,151 @@
+name: Build Kernel (Auto)
+
+on:
+  push:
+    branches:
+      - ubuntu-env-2
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: 拉取内核源码
+        uses: actions/checkout@v4
+
+      - name: 安装编译依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python3-pip
+
+      - name: 安装 Python3 包
+        run: |
+          pip3 install pycryptodome
+
+      - name: 配置 JDK
+        run: |
+          sudo apt-get install -y openjdk-11-jdk
+          echo "JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64" >> $GITHUB_ENV
+          echo "ANDROID_JAVA_HOME=$JAVA_HOME" >> $GITHUB_ENV
+
+      - name: 缓存 ccache
+        uses: actions/cache@v4
+        with:
+          path: ~/.ccache
+          key: ${{ runner.os }}-ccache-kernel-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-ccache-kernel-
+
+      - name: 启用 ccache
+        run: |
+          export USE_CCACHE=1
+          export CCACHE_EXEC=/usr/bin/ccache
+          ccache -M 50G
+          ccache -o compression=true
+          echo "USE_CCACHE=1" >> $GITHUB_ENV
+          echo "CCACHE_EXEC=/usr/bin/ccache" >> $GITHUB_ENV
+
+      - name: 下载预编译工具链
+        run: |
+          mkdir -p prebuilts/clang/host/linux-x86
+          mkdir -p prebuilts/gcc/linux-x86/aarch64
+          mkdir -p prebuilts/gcc/linux-x86/arm
+
+          # 下载 clang
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/heads/main/clang-r416183b.tar.gz -O clang.tar.gz
+          tar -xzf clang.tar.gz -C prebuilts/clang/host/linux-x86
+          rm clang.tar.gz
+
+          # 下载 GCC aarch64
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9.tar.gz -O gcc-aarch64.tar.gz
+          tar -xzf gcc-aarch64.tar.gz -C prebuilts/gcc/linux-x86/aarch64
+          rm gcc-aarch64.tar.gz
+
+          # 下载 GCC arm
+          wget -q https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/arm-linux-androideabi-4.9.tar.gz -O gcc-arm.tar.gz
+          tar -xzf gcc-arm.tar.gz -C prebuilts/gcc/linux-x86/arm
+          rm gcc-arm.tar.gz
+
+      - name: 拉取 KernelSU
+        run: |
+          cd ..
+          KERNELSU_VERSION=$(curl -s https://api.github.com/repos/tiann/KernelSU/releases/latest | grep -o '"tag_name": "[^"]*"' | cut -d'"' -f4)
+          echo "Using KernelSU version: $KERNELSU_VERSION"
+          echo "KERNELSU_VERSION=$KERNELSU_VERSION" >> $GITHUB_ENV
+
+          git clone --depth=1 https://github.com/tiann/KernelSU.git kernelisu
+          cd kernelisu
+          git checkout $KERNELSU_VERSION
+          echo "KERNELSU_PATH=$(pwd)" >> $GITHUB_ENV
+
+      - name: 应用 KernelSU 补丁
+        run: |
+          cd ${{ github.workspace }}
+          export KSU_ROOT=${{ env.KERNELSU_PATH }}
+
+          # 应用 kernelSU 补丁
+          for patch in $KSU_ROOT/kernel/patches/*.patch; do
+            if [ -f "$patch" ]; then
+              patch -p1 < "$patch" || true
+            fi
+          done
+
+          # 复制 kernelSU 内核模块
+          mkdir -p ${{ github.workspace }}/kernelSU
+          cp -r $KSU_ROOT/kernel/module/* ${{ github.workspace }}/kernelSU/
+
+      - name: 编译内核
+        run: |
+          cd ${{ github.workspace }}
+
+          export ARCH=arm64
+          export SUBARCH=arm64
+          export CROSS_COMPILE=${{ github.workspace }}/../prebuilts/gcc/linux-x86/aarch64/aarch64-linux-android-4.9/bin/aarch64-linux-android-
+          export CLANG_PREBUILT=${{ github.workspace }}/../prebuilts/clang/host/linux-x86/clang-r416183b
+          export PATH=$CLANG_PREBUILT/bin:$PATH
+
+          # 使用 aarch64 构建配置
+          export BUILD_CONFIG=build.config.aarch64
+          source $BUILD_CONFIG
+
+          # 添加额外内核配置
+          echo "CONFIG_KPROBES=y" >> .config
+          echo "CONFIG_MODULES=y" >> .config
+
+          # 构建 - 使用 apollon 设备专用配置
+          make -j$(nproc) O=out vendor/xiaomi/apollo.config 2>/dev/null || make -j$(nproc) O=out lineageos_defconfig 2>/dev/null || make -j$(nproc) O=out defconfig
+          make -j$(nproc) O=out
+
+      - name: 创建可刷入 zip
+        run: |
+          cd ${{ github.workspace }}
+
+          # 创建输出目录
+          mkdir -p output
+
+          # 复制内核镜像
+          cp out/arch/arm64/boot/Image.gz-dtb output/boot.img
+
+          # 创建刷入 zip 结构
+          mkdir -p zip/META-INF/com/google/android
+          mkdir -p zip
+
+          # 创建刷入脚本
+          cat > zip/META-INF/com/google/android/updater-script << 'EOF'
+          ui_print("Kernel flashed successfully!");
+          ui_print("Kernel: LineageOS 23.2 + KernelSU");
+          package_extract_file("boot.img", "/dev/block/bootdevice/by-name/boot");
+          EOF
+
+          # 创建刷入 zip
+          cd zip
+          zip -r ../output/lineage-23.2-kernelsu.zip META-INF boot.img
+
+          # 复制到输出目录
+          cd ../output
+          ls -la
+
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: kernel-zip
+          path: output/lineage-23.2-kernelsu.zip
