@@ -34,10 +34,21 @@ jobs:
           # 2. 注入 Xiaomi Apollon 专用配置
           cat arch/arm64/configs/vendor/xiaomi/apollo.config >> out/.config
           
-          # 3. 启用 KSU 和 核心依赖
+          # 3. 启用 KSU 和 核心依赖 (针对 Android 16 优化)
           echo "CONFIG_KSU=y" >> out/.config
           echo "CONFIG_OVERLAY_FS=y" >> out/.config
           echo "CONFIG_KSU_DEBUG=n" >> out/.config
+          
+          # Android 16 必需的 eBPF 和网络配置
+          echo "CONFIG_BPF=y" >> out/.config
+          echo "CONFIG_BPF_SYSCALL=y" >> out/.config
+          echo "CONFIG_BPF_JIT=y" >> out/.config
+          echo "CONFIG_CGROUP_BPF=y" >> out/.config
+          echo "CONFIG_NETFILTER_XT_MATCH_BPF=y" >> out/.config
+          echo "CONFIG_INET_UDP_DIAG=y" >> out/.config
+          echo "CONFIG_INET_RAW_DIAG=y" >> out/.config
+          echo "CONFIG_INET_DIAG_DESTROY=y" >> out/.config
+          
           echo "CONFIG_PSTORE=y" >> out/.config
           echo "CONFIG_PSTORE_CONSOLE=y" >> out/.config
           echo "CONFIG_PSTORE_PMSG=y" >> out/.config
@@ -64,35 +75,21 @@ jobs:
           sed -i 's/is_slot_device=1/is_slot_device=0/g' anykernel.sh
           sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=/dev/block/bootdevice/by-name/boot|g' anykernel.sh
           
-          # 集成 MagiskBoot 用于 AVB Patch
+          # 集成 MagiskBoot 用于打包验证
           curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
           unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d .
           mv libmagiskboot.so magiskboot
           chmod +x magiskboot
           
           # 拷贝内核产物
-          # 优先使用 Image.gz-dtb，如果不存在则使用 Image.gz
           if [ -f "../out/arch/arm64/boot/Image.gz-dtb" ]; then
             cp ../out/arch/arm64/boot/Image.gz-dtb ./Image.gz
           elif [ -f "../out/arch/arm64/boot/Image.gz" ]; then
             cp ../out/arch/arm64/boot/Image.gz .
-          elif [ -f "../out/arch/arm64/boot/Image" ]; then
-            cp ../out/arch/arm64/boot/Image .
           fi
           
-          # 拷贝 DTBO (如果编译生成了)
-          if [ -f "../out/arch/arm64/boot/dtbo.img" ]; then
-            cp ../out/arch/arm64/boot/dtbo.img .
-          fi
-          
-          # 注入 AVB Patch 脚本
-          cat > patch.sh <<-'EOF'
-          #!/sbin/sh
-          ui_print "- Executing local AVB Patch (Kona)..."
-          ./magiskboot hexpatch "$split_img/kernel" 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true
-          EOF
-          chmod +x patch.sh
-          sed -i '/split_boot;/a . ./patch.sh' anykernel.sh
+          # 针对 Android 16 的引导逻辑，移除强制 hexpatch skip_initramfs
+          # 仅保留基础 AnyKernel3 逻辑
 
           # 生成 ZIP 文件名
           DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
