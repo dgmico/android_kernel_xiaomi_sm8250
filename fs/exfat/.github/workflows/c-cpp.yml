@@ -1,10 +1,7 @@
 name: linux-exfat-oot CI
 
 on:
-  push:
-    branches: [ "for-kernel-version-from-4.1.0" ]
-  pull_request:
-    branches: [ "for-kernel-version-from-4.1.0" ]
+  workflow_dispatch:
 
 jobs:
   build:
