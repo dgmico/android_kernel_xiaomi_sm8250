@@ -34,8 +34,10 @@ jobs:
           # 2. 注入 Xiaomi Apollon 专用配置
           cat arch/arm64/configs/vendor/xiaomi/apollo.config >> out/.config
           
-          # 3. 启用 KSU 和 PSTORE (根据之前 build-s3.yml 的实践)
+          # 3. 启用 KSU 和 核心依赖
           echo "CONFIG_KSU=y" >> out/.config
+          echo "CONFIG_OVERLAY_FS=y" >> out/.config
+          echo "CONFIG_KSU_DEBUG=n" >> out/.config
           echo "CONFIG_PSTORE=y" >> out/.config
           echo "CONFIG_PSTORE_CONSOLE=y" >> out/.config
           echo "CONFIG_PSTORE_PMSG=y" >> out/.config
