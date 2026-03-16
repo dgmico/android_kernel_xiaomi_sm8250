@@ -73,13 +73,14 @@ jobs:
           # 4. 确保配置同步
           make O=out ARCH=arm64 olddefconfig
           
-          # 5. 开始编译
+          # 5. 开始编译 (针对 noGKI 架构，同时生成 Image.gz 和 Image.gz-dtb)
           make -j$(nproc --all) O=out ARCH=arm64 \
             CC="ccache clang" \
             CLANG_TRIPLE=aarch64-linux-gnu- \
             CROSS_COMPILE=aarch64-linux-gnu- \
             CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
-            LLVM=1 LLVM_IAS=1
+            LLVM=1 LLVM_IAS=1 \
+            Image.gz Image.gz-dtb dtbo.img
 
       - name: 使用 AnyKernel3 打包成果
         run: |
@@ -91,13 +92,11 @@ jobs:
           sed -i 's/is_slot_device=0/is_slot_device=1/g' anykernel.sh
           sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=/dev/block/bootdevice/by-name/boot|g' anykernel.sh
           
-          # 拷贝内核产物
+          # 拷贝内核产物 (noGKI 优先使用 Image.gz-dtb)
           if [ -f "../out/arch/arm64/boot/Image.gz-dtb" ]; then
             cp ../out/arch/arm64/boot/Image.gz-dtb ./Image.gz
           elif [ -f "../out/arch/arm64/boot/Image.gz" ]; then
             cp ../out/arch/arm64/boot/Image.gz .
-          elif [ -f "../out/arch/arm64/boot/Image" ]; then
-            cp ../out/arch/arm64/boot/Image .
           fi
           
           # 拷贝 DTBO
