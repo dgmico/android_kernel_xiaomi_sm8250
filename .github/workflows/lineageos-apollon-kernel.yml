@@ -1,0 +1,108 @@
+name: LineageOS Apollon Kernel Build (Manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - name: 检出源码
+        uses: actions/checkout@v4
+
+      - name: 安装 LineageOS 编译依赖
+        run: |
+          sudo apt update
+          sudo apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev cpio unzip
+
+      - name: 获取 AOSP Clang 工具链 (r450784e)
+        run: |
+          git clone --depth 1 https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86 -b master-kernel-build-2022 toolchain
+
+      - name: 下载原厂 boot.img (可选参考)
+        run: |
+          curl -L "https://s3.yorlee.xyz/boot.img" -o original_boot.img
+
+      - name: 执行内核编译
+        run: |
+          export PATH=$(pwd)/toolchain/clang-r450784e/bin:$PATH
+          mkdir -p out
+          
+          # 1. 基础配置
+          make O=out ARCH=arm64 vendor/kona-perf_defconfig
+          
+          # 2. 注入 Xiaomi Apollon 专用配置
+          cat arch/arm64/configs/vendor/xiaomi/apollo.config >> out/.config
+          
+          # 3. 启用 KSU 和 PSTORE (根据之前 build-s3.yml 的实践)
+          echo "CONFIG_KSU=y" >> out/.config
+          echo "CONFIG_PSTORE=y" >> out/.config
+          echo "CONFIG_PSTORE_CONSOLE=y" >> out/.config
+          echo "CONFIG_PSTORE_PMSG=y" >> out/.config
+          echo "CONFIG_PSTORE_RAM=y" >> out/.config
+          
+          # 4. 确保配置同步
+          make O=out ARCH=arm64 olddefconfig
+          
+          # 5. 开始编译
+          make -j$(nproc --all) O=out ARCH=arm64 \
+            CC="ccache clang" \
+            CLANG_TRIPLE=aarch64-linux-gnu- \
+            CROSS_COMPILE=aarch64-linux-gnu- \
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- \
+            LLVM=1 LLVM_IAS=1
+
+      - name: 使用 AnyKernel3 打包成果
+        run: |
+          git clone https://github.com/osm0sis/AnyKernel3 --depth 1
+          cd AnyKernel3
+          
+          # 针对 apollon 配置 AnyKernel3
+          sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
+          sed -i 's/is_slot_device=1/is_slot_device=0/g' anykernel.sh
+          sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=/dev/block/bootdevice/by-name/boot|g' anykernel.sh
+          
+          # 集成 MagiskBoot 用于 AVB Patch
+          curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
+          unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d .
+          mv libmagiskboot.so magiskboot
+          chmod +x magiskboot
+          
+          # 拷贝内核产物
+          # 优先使用 Image.gz-dtb，如果不存在则使用 Image.gz
+          if [ -f "../out/arch/arm64/boot/Image.gz-dtb" ]; then
+            cp ../out/arch/arm64/boot/Image.gz-dtb ./Image.gz
+          elif [ -f "../out/arch/arm64/boot/Image.gz" ]; then
+            cp ../out/arch/arm64/boot/Image.gz .
+          elif [ -f "../out/arch/arm64/boot/Image" ]; then
+            cp ../out/arch/arm64/boot/Image .
+          fi
+          
+          # 拷贝 DTBO (如果编译生成了)
+          if [ -f "../out/arch/arm64/boot/dtbo.img" ]; then
+            cp ../out/arch/arm64/boot/dtbo.img .
+          fi
+          
+          # 注入 AVB Patch 脚本
+          cat > patch.sh <<-'EOF'
+          #!/sbin/sh
+          ui_print "- Executing local AVB Patch (Kona)..."
+          ./magiskboot hexpatch "$split_img/kernel" 736B69705F696E697472616D667300 77616E745F696E697472616D667300 || true
+          EOF
+          chmod +x patch.sh
+          sed -i '/split_boot;/a . ./patch.sh' anykernel.sh
+
+          # 生成 ZIP 文件名
+          DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
+          ZIP_NAME="apollon-kernel-lineageos-${DATE}.zip"
+          echo "ZIP_NAME=${ZIP_NAME}" >> $GITHUB_ENV
+          
+          # 打包
+          zip -r9 "../${ZIP_NAME}" * -x .git* -x README.md -x LICENSE
+          cd ..
+
+      - name: 上传刷入包
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.ZIP_NAME }}
+          path: ${{ env.ZIP_NAME }}
