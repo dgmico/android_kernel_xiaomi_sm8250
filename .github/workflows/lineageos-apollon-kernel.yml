@@ -13,7 +13,14 @@ jobs:
       - name: 安装 LineageOS 编译依赖
         run: |
           sudo apt update
-          sudo apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev cpio unzip
+          sudo apt install -y bc bison build-essential ccache curl flex g++-multilib gcc-multilib git git-lfs gnupg gperf imagemagick protobuf-compiler python3-protobuf lib32readline-dev lib32z1-dev libdw-dev libelf-dev libgnutls28-dev lz4 libsdl1.2-dev libssl-dev libxml2 libxml2-utils lzop pngcrush rsync schedtool squashfs-tools xsltproc zip zlib1g-dev python-is-python3 libncurses5 libncurses5-dev cpio unzip pahole
+
+      - name: 配置 ccache 缓存
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.ccache
+          key: ccache-lineageos-apollon-${{ github.sha }}
+          restore-keys: ccache-lineageos-apollon-
 
       - name: 获取 AOSP Clang 工具链 (r450784e)
         run: |
@@ -26,6 +33,10 @@ jobs:
       - name: 执行内核编译
         run: |
           export PATH=$(pwd)/toolchain/clang-r450784e/bin:$PATH
+          export USE_CCACHE=1
+          export CCACHE_DIR=/home/runner/.ccache
+          ccache -M 5G
+          
           mkdir -p out
           
           # 1. 基础配置
@@ -38,6 +49,7 @@ jobs:
           echo "CONFIG_KSU=y" >> out/.config
           echo "CONFIG_OVERLAY_FS=y" >> out/.config
           echo "CONFIG_KSU_DEBUG=n" >> out/.config
+          echo "CONFIG_LOCALVERSION=\"-LineageOS-23.2-KSU\"" >> out/.config
           
           # Android 16 必需的 eBPF 和网络配置
           echo "CONFIG_BPF=y" >> out/.config
@@ -45,9 +57,13 @@ jobs:
           echo "CONFIG_BPF_JIT=y" >> out/.config
           echo "CONFIG_CGROUP_BPF=y" >> out/.config
           echo "CONFIG_NETFILTER_XT_MATCH_BPF=y" >> out/.config
+          echo "CONFIG_NETFILTER_XT_MATCH_QTAGUID=y" >> out/.config
           echo "CONFIG_INET_UDP_DIAG=y" >> out/.config
           echo "CONFIG_INET_RAW_DIAG=y" >> out/.config
           echo "CONFIG_INET_DIAG_DESTROY=y" >> out/.config
+          
+          # 提高 Android 16 兼容性的 BTF 支持 (需要 pahole)
+          echo "CONFIG_DEBUG_INFO_BTF=y" >> out/.config
           
           echo "CONFIG_PSTORE=y" >> out/.config
           echo "CONFIG_PSTORE_CONSOLE=y" >> out/.config
@@ -75,21 +91,19 @@ jobs:
           sed -i 's/is_slot_device=0/is_slot_device=1/g' anykernel.sh
           sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=/dev/block/bootdevice/by-name/boot|g' anykernel.sh
           
-          # 集成 MagiskBoot 用于打包验证
-          curl -L "https://github.com/Topjohnwu/Magisk/releases/download/v28.0/Magisk-v28.0.apk" -o magisk.zip
-          unzip -j magisk.zip "lib/x86_64/libmagiskboot.so" -d .
-          mv libmagiskboot.so magiskboot
-          chmod +x magiskboot
-          
           # 拷贝内核产物
           if [ -f "../out/arch/arm64/boot/Image.gz-dtb" ]; then
             cp ../out/arch/arm64/boot/Image.gz-dtb ./Image.gz
           elif [ -f "../out/arch/arm64/boot/Image.gz" ]; then
             cp ../out/arch/arm64/boot/Image.gz .
+          elif [ -f "../out/arch/arm64/boot/Image" ]; then
+            cp ../out/arch/arm64/boot/Image .
           fi
           
-          # 针对 Android 16 的引导逻辑，移除强制 hexpatch skip_initramfs
-          # 仅保留基础 AnyKernel3 逻辑
+          # 拷贝 DTBO
+          if [ -f "../out/arch/arm64/boot/dtbo.img" ]; then
+            cp ../out/arch/arm64/boot/dtbo.img .
+          fi
 
           # 生成 ZIP 文件名
           DATE=$(TZ='Asia/Shanghai' date +%Y%m%d-%H%M)
