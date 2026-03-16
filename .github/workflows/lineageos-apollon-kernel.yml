@@ -70,9 +70,9 @@ jobs:
           git clone https://github.com/osm0sis/AnyKernel3 --depth 1
           cd AnyKernel3
           
-          # 针对 apollon 配置 AnyKernel3
+          # 针对 apollon 配置 AnyKernel3 (A/B 分区设备)
           sed -i 's/do.devicecheck=1/do.devicecheck=0/g' anykernel.sh
-          sed -i 's/is_slot_device=1/is_slot_device=0/g' anykernel.sh
+          sed -i 's/is_slot_device=0/is_slot_device=1/g' anykernel.sh
           sed -i 's|block=/dev/block/platform/omap/omap_hsmmc.0/by-name/boot|block=/dev/block/bootdevice/by-name/boot|g' anykernel.sh
           
           # 集成 MagiskBoot 用于打包验证
