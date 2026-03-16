@@ -1,6 +1,9 @@
 name: LineageOS Apollon Kernel Build (Manual)
 
 on:
+  push:
+    branches:
+      - ubuntu-env
   workflow_dispatch:
 
 jobs:
